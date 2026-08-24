@@ -21,7 +21,26 @@ public record DashboardViewModel(
     int ActiveUsers,
     int BannedUsers,
     int HiddenProducts,
-    int PendingDisputes);
+    int PendingDisputes,
+    IReadOnlyList<DashboardAlertViewModel> Alerts);
+
+public record DashboardAlertViewModel(string Severity, string Title, string Message, string Controller, string Action);
+
+public record AdminReportViewModel(
+    DateTime? From,
+    DateTime? To,
+    DateTime GeneratedAtUtc,
+    int TotalUsers,
+    int TotalProducts,
+    int TotalOrders,
+    decimal PaidRevenue,
+    IReadOnlyList<ReportBreakdownViewModel> UserStatuses,
+    IReadOnlyList<ReportBreakdownViewModel> ProductStatuses,
+    IReadOnlyList<ReportBreakdownViewModel> OrderStatuses,
+    IReadOnlyList<ReportBreakdownViewModel> DisputeStatuses,
+    IReadOnlyList<ReportBreakdownViewModel> AuditActions);
+
+public record ReportBreakdownViewModel(string Label, int Count, decimal Amount);
 
 public record PagedViewModel<T>(int Page, int PageSize, int Total, IReadOnlyList<T> Items)
 {

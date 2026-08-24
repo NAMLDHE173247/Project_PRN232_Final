@@ -2,16 +2,31 @@
 @{ ViewData["Title"] = "Sản phẩm"; }
 <h1 class="page-title">Kiểm duyệt sản phẩm</h1>
 <form method="get" class="panel mb-3 row g-2 align-items-end">
-    <div class="col-sm-5 col-lg-3"><label class="form-label" for="status">Trạng thái</label><select class="form-select" id="status" name="status"><option value="">Tất cả</option><option value="Active" selected="@(ViewBag.Status == "Active")">Active</option><option value="Hidden" selected="@(ViewBag.Status == "Hidden")">Hidden</option></select></div>
-    <div class="col-auto"><button class="btn btn-primary" type="submit">Lọc</button></div>
+    <div class="col-sm-6 col-lg-3"><label class="form-label" for="search">Tìm kiếm</label><input class="form-control" id="search" name="search" value="@ViewBag.Search" placeholder="Tên sản phẩm" /></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="sellerId">Seller ID</label><input class="form-control" id="sellerId" name="sellerId" type="number" min="1" value="@ViewBag.SellerId" /></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="status">Trạng thái</label><select class="form-select" id="status" name="status"><option value="">Tất cả</option><option value="Active" selected="@(ViewBag.Status == "Active")">Active</option><option value="Hidden" selected="@(ViewBag.Status == "Hidden")">Hidden</option></select></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="sort">Sắp xếp</label><select class="form-select" id="sort" name="sort"><option value="id" selected="@(ViewBag.Sort == "id" || ViewBag.Sort == null)">ID</option><option value="name" selected="@(ViewBag.Sort == "name")">Tên</option><option value="price" selected="@(ViewBag.Sort == "price")">Giá</option><option value="seller" selected="@(ViewBag.Sort == "seller")">Seller</option><option value="status" selected="@(ViewBag.Sort == "status")">Status</option></select></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="direction">Thứ tự</label><select class="form-select" id="direction" name="direction"><option value="asc" selected="@(ViewBag.Direction == "asc")">Tăng dần</option><option value="desc" selected="@(ViewBag.Direction == "desc")">Giảm dần</option></select></div>
+    <div class="col-auto"><button class="btn btn-primary" type="submit">Lọc</button> <a class="btn btn-outline-secondary" asp-action="Index">Xóa lọc</a></div>
 </form>
-<div class="panel table-responsive"><table class="table align-middle"><thead><tr><th>ID</th><th>Sản phẩm</th><th>Giá</th><th>Seller</th><th>Status</th><th>Thao tác</th></tr></thead><tbody>
+<div class="panel table-responsive"><table class="table align-middle"><thead><tr><th><a asp-route-search="@ViewBag.Search" asp-route-sellerId="@ViewBag.SellerId" asp-route-status="@ViewBag.Status" asp-route-sort="id" asp-route-direction="@(ViewBag.Sort == "id" && ViewBag.Direction == "asc" ? "desc" : "asc")">ID</a></th><th><a asp-route-search="@ViewBag.Search" asp-route-sellerId="@ViewBag.SellerId" asp-route-status="@ViewBag.Status" asp-route-sort="name" asp-route-direction="@(ViewBag.Sort == "name" && ViewBag.Direction == "asc" ? "desc" : "asc")">Sản phẩm</a></th><th><a asp-route-search="@ViewBag.Search" asp-route-sellerId="@ViewBag.SellerId" asp-route-status="@ViewBag.Status" asp-route-sort="price" asp-route-direction="@(ViewBag.Sort == "price" && ViewBag.Direction == "asc" ? "desc" : "asc")">Giá</a></th><th>Seller</th><th>Status</th><th>Thao tác</th></tr></thead><tbody>
 @foreach (var product in Model.Items)
 {
     <tr><td>@product.Id</td><td>@product.Name</td><td>@product.Price.ToString("N0")</td><td>@product.SellerId</td><td><span class="badge-status">@product.Status</span></td><td>
-        @if (product.Status == "Active") { <form asp-action="Hide" method="post"><input type="hidden" name="id" value="@product.Id" /><button class="btn btn-warning btn-sm">Ẩn</button></form> }
-        else { <form asp-action="Unhide" method="post"><input type="hidden" name="id" value="@product.Id" /><button class="btn btn-outline-success btn-sm">Hiện lại</button></form> }
+        @if (product.Status == "Active") { <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#hide-product-@product.Id">Ẩn</button> }
+        else { <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#unhide-product-@product.Id">Hiện lại</button> }
     </td></tr>
 }
 </tbody></table></div>
-<div class="mt-3 d-flex justify-content-between"><span class="text-muted">Trang @Model.Page / @Model.TotalPages · @Model.Total bản ghi</span><div class="btn-group"><a class="btn btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")" asp-route-page="@(Model.Page - 1)" asp-route-status="@ViewBag.Status">Trước</a><a class="btn btn-outline-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" asp-route-page="@(Model.Page + 1)" asp-route-status="@ViewBag.Status">Sau</a></div></div>
+@foreach (var product in Model.Items)
+{
+    var isActive = product.Status == "Active";
+    <div class="modal fade" id="@(isActive ? "hide-product-" : "unhide-product-")@product.Id" tabindex="-1" aria-labelledby="product-action-label-@product.Id" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title fs-5" id="product-action-label-@product.Id">@(isActive ? "Ẩn sản phẩm" : "Hiện lại sản phẩm")</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+            <div class="modal-body">@(isActive ? "Sản phẩm sẽ không còn hiển thị trong danh sách công khai." : "Sản phẩm sẽ được hiển thị lại trong danh sách công khai.")<br /><strong>@product.Name</strong></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><form asp-action="@(isActive ? "Hide" : "Unhide")" method="post"><input type="hidden" name="id" value="@product.Id" /><button type="submit" class="btn @(isActive ? "btn-warning" : "btn-success")">Xác nhận</button></form></div>
+        </div></div>
+    </div>
+}
+<div class="mt-3 d-flex justify-content-between"><span class="text-muted">Trang @Model.Page / @Model.TotalPages · @Model.Total bản ghi</span><div class="btn-group"><a class="btn btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")" asp-route-page="@(Model.Page - 1)" asp-route-search="@ViewBag.Search" asp-route-sellerId="@ViewBag.SellerId" asp-route-status="@ViewBag.Status" asp-route-sort="@ViewBag.Sort" asp-route-direction="@ViewBag.Direction">Trước</a><a class="btn btn-outline-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" asp-route-page="@(Model.Page + 1)" asp-route-search="@ViewBag.Search" asp-route-sellerId="@ViewBag.SellerId" asp-route-status="@ViewBag.Status" asp-route-sort="@ViewBag.Sort" asp-route-direction="@ViewBag.Direction">Sau</a></div></div>

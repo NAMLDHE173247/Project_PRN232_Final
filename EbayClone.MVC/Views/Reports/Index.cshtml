@@ -1,0 +1,28 @@
+@model AdminReportViewModel
+@{ ViewData["Title"] = "Reports"; }
+<header class="page-header">
+    <h1 class="page-title">Reports nâng cao</h1>
+    <p>Phân tích dữ liệu quản trị theo khoảng thời gian và trạng thái hiện tại.</p>
+</header>
+
+<form method="get" class="panel mb-3 row g-2 align-items-end">
+    <div class="col-sm-6 col-lg-3"><label class="form-label" for="from">Từ ngày</label><input class="form-control" type="date" id="from" name="from" value="@ViewBag.From" /></div>
+    <div class="col-sm-6 col-lg-3"><label class="form-label" for="to">Đến ngày</label><input class="form-control" type="date" id="to" name="to" value="@ViewBag.To" /></div>
+    <div class="col-auto"><button class="btn btn-primary" type="submit">Lọc báo cáo</button></div>
+    <div class="col-auto"><a class="btn btn-outline-secondary" asp-action="Index">Xóa lọc</a></div>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Người dùng</div><div class="stat-value">@Model.TotalUsers</div></div></div>
+    <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Sản phẩm</div><div class="stat-value">@Model.TotalProducts</div></div></div>
+    <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Đơn hàng trong kỳ</div><div class="stat-value">@Model.TotalOrders</div></div></div>
+    <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Doanh thu Paid</div><div class="stat-value">@Model.PaidRevenue.ToString("N0")</div></div></div>
+</div>
+
+<div class="row g-3">
+    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Người dùng theo trạng thái", Model.UserStatuses, false))" />
+    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Sản phẩm theo trạng thái", Model.ProductStatuses, false))" />
+    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Đơn hàng theo trạng thái", Model.OrderStatuses, true))" />
+    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Khiếu nại theo trạng thái", Model.DisputeStatuses, false))" />
+    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Top thao tác Audit", Model.AuditActions, false))" />
+</div>

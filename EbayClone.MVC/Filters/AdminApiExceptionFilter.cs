@@ -12,10 +12,16 @@ public sealed class AdminApiExceptionFilter : IExceptionFilter
 
         if (exception.StatusCode is 401 or 403)
             context.HttpContext.Session.Clear();
+        else if (exception.StatusCode == 503)
+        {
+            context.HttpContext.Session.SetString("OfflineMode", "true");
+        }
 
         context.Result = exception.StatusCode is 401 or 403
             ? new RedirectToActionResult("Login", "Account", null)
-            : new RedirectToActionResult("Index", "Dashboard", null);
+            : exception.StatusCode == 503
+                ? new RedirectToActionResult("Offline", "Dashboard", null)
+                : new RedirectToActionResult("Index", "Dashboard", null);
         context.ExceptionHandled = true;
     }
 }

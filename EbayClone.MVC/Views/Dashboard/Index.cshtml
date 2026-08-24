@@ -1,13 +1,66 @@
 @model DashboardViewModel
 @{ ViewData["Title"] = "Dashboard"; }
-<h1 class="page-title">Dashboard</h1>
-<div class="row g-3">
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Tổng người dùng</div><div class="stat-value">@Model.TotalUsers</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Tổng sản phẩm</div><div class="stat-value">@Model.TotalProducts</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Tổng đơn hàng</div><div class="stat-value">@Model.TotalOrders</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Doanh thu Paid</div><div class="stat-value">@Model.Revenue.ToString("N0")</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">User Active</div><div class="stat-value">@Model.ActiveUsers</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">User Banned</div><div class="stat-value">@Model.BannedUsers</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Product Hidden</div><div class="stat-value">@Model.HiddenProducts</div></div></div>
-    <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-label">Dispute Open</div><div class="stat-value">@Model.PendingDisputes</div></div></div>
+<header class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p>Tổng quan hoạt động quản trị của hệ thống.</p>
+</header>
+
+<section class="dashboard-section" aria-labelledby="dashboard-main-metrics">
+    <h2 id="dashboard-main-metrics" class="dashboard-section-title">Tổng quan</h2>
+    <div class="row g-3 dashboard-grid">
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Tổng người dùng</div><div class="stat-value">@Model.TotalUsers</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Tổng sản phẩm</div><div class="stat-value">@Model.TotalProducts</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Tổng đơn hàng</div><div class="stat-value">@Model.TotalOrders</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Doanh thu Paid</div><div class="stat-value">@Model.Revenue.ToString("N0")</div></div></div>
+    </div>
+</section>
+
+<section class="dashboard-section" aria-labelledby="dashboard-monitoring-metrics">
+    <h2 id="dashboard-monitoring-metrics" class="dashboard-section-title">Theo dõi cần chú ý</h2>
+    <div class="row g-3 dashboard-grid">
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">User Active</div><div class="stat-value">@Model.ActiveUsers</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">User Banned</div><div class="stat-value">@Model.BannedUsers</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Product Hidden</div><div class="stat-value">@Model.HiddenProducts</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Dispute Open</div><div class="stat-value">@Model.PendingDisputes</div></div></div>
+    </div>
+</section>
+
+@if (Model.Alerts.Count > 0)
+{
+    <section class="dashboard-section" aria-labelledby="dashboard-alerts-title">
+        <h2 id="dashboard-alerts-title" class="dashboard-section-title">Cảnh báo cần xử lý</h2>
+        <div class="dashboard-alert-list">
+            @foreach (var alert in Model.Alerts)
+            {
+                <div class="alert alert-@(alert.Severity) d-flex flex-wrap justify-content-between align-items-center gap-2" role="alert">
+                    <div><strong>@alert.Title</strong><div>@alert.Message</div></div>
+                    <a class="btn btn-sm btn-outline-dark" asp-controller="@alert.Controller" asp-action="@alert.Action">Xem</a>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<section class="dashboard-section" aria-labelledby="dashboard-charts-title">
+    <h2 id="dashboard-charts-title" class="dashboard-section-title">Biểu đồ tổng quan</h2>
+    <div class="row g-3 dashboard-charts">
+        <div class="col-12 col-xl-6">
+            <div class="panel chart-card">
+                <h3 class="chart-title">Trạng thái người dùng</h3>
+                <div class="chart-canvas-wrapper"><canvas id="user-status-chart" data-labels='["Active","Banned"]' data-values='[@Model.ActiveUsers,@Model.BannedUsers]' aria-label="Biểu đồ trạng thái người dùng"></canvas></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="panel chart-card">
+                <h3 class="chart-title">Trạng thái sản phẩm</h3>
+                <div class="chart-canvas-wrapper"><canvas id="product-status-chart" data-labels='["Active","Hidden"]' data-values='[@(Model.TotalProducts - Model.HiddenProducts),@Model.HiddenProducts]' aria-label="Biểu đồ trạng thái sản phẩm"></canvas></div>
+            </div>
+        </div>
+    </div>
+</section>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
+}

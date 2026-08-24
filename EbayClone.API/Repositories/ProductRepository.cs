@@ -7,17 +7,35 @@ namespace EbayClone.API.Repositories;
 public class ProductRepository(AppDbContext dbContext) : IProductRepository
 {
     public async Task<(int Total, IReadOnlyList<Product> Items)> GetPageAsync(
+        string? search,
+        int? sellerId,
         ProductStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = dbContext.Products.AsNoTracking().OrderBy(product => product.Id);
+        var query = dbContext.Products.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(product => product.Name.Contains(search.Trim()));
+        if (sellerId.HasValue)
+            query = query.Where(product => product.SellerId == sellerId.Value);
         if (status.HasValue)
-            query = (IOrderedQueryable<Product>)query.Where(product => product.Status == status.Value);
+            query = query.Where(product => product.Status == status.Value);
 
-        var total = await query.CountAsync(cancellationToken);
-        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        var descending = string.Equals(direction, "desc", StringComparison.OrdinalIgnoreCase);
+        var orderedQuery = (sort?.Trim().ToLowerInvariant()) switch
+        {
+            "name" => descending ? query.OrderByDescending(product => product.Name).ThenByDescending(product => product.Id) : query.OrderBy(product => product.Name).ThenBy(product => product.Id),
+            "price" => descending ? query.OrderByDescending(product => product.Price).ThenByDescending(product => product.Id) : query.OrderBy(product => product.Price).ThenBy(product => product.Id),
+            "seller" => descending ? query.OrderByDescending(product => product.SellerId).ThenByDescending(product => product.Id) : query.OrderBy(product => product.SellerId).ThenBy(product => product.Id),
+            "status" => descending ? query.OrderByDescending(product => product.Status).ThenByDescending(product => product.Id) : query.OrderBy(product => product.Status).ThenBy(product => product.Id),
+            _ => descending ? query.OrderByDescending(product => product.Id) : query.OrderBy(product => product.Id)
+        };
+
+        var total = await orderedQuery.CountAsync(cancellationToken);
+        var items = await orderedQuery.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
         return (total, items);
     }
 

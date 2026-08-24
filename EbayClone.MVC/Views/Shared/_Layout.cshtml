@@ -1,6 +1,12 @@
 @{
-    var isLoggedIn = !string.IsNullOrWhiteSpace(Context.Session.GetString("AdminToken"));
+    var isAdminLoggedIn = !string.IsNullOrWhiteSpace(Context.Session.GetString("AdminToken"));
+    var marketplaceRole = Context.Session.GetString("MarketplaceAccountType");
+    var isMarketplaceLoggedIn = !string.IsNullOrWhiteSpace(Context.Session.GetString("MarketplaceToken"));
+    var isLoggedIn = isAdminLoggedIn || isMarketplaceLoggedIn;
+    var isOffline = Context.Session.GetString("OfflineMode") == "true";
     var adminEmail = Context.Session.GetString("AdminEmail");
+    var marketplaceEmail = Context.Session.GetString("MarketplaceEmail");
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
 }
 <!DOCTYPE html>
 <html lang="vi" data-theme="light">
@@ -11,52 +17,107 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
+<body data-admin-authenticated="@(isAdminLoggedIn ? "true" : "false")" data-offline="@(isOffline ? "true" : "false")">
     <a class="skip-link" href="#main-content">Bỏ qua điều hướng</a>
     @if (isLoggedIn)
     {
-        <div class="admin-shell">
-            <aside class="sidebar" aria-label="Điều hướng Admin">
-                <a class="brand" asp-controller="Dashboard" asp-action="Index">Ebay Admin</a>
-                <nav class="nav flex-column gap-1">
-                    <a class="nav-link" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-                    <a class="nav-link" asp-controller="Users" asp-action="Index">Người dùng</a>
-                    <a class="nav-link" asp-controller="Products" asp-action="Index">Sản phẩm</a>
-                    <a class="nav-link" asp-controller="Orders" asp-action="Index">Đơn hàng</a>
-                    <a class="nav-link" asp-controller="Disputes" asp-action="Index">Khiếu nại</a>
-                    <a class="nav-link" asp-controller="Feedbacks" asp-action="Index">Feedbacks</a>
-                    <a class="nav-link" asp-controller="AuditLogs" asp-action="Index">Audit Logs</a>
-                </nav>
-            </aside>
-            <div class="content-area">
-                <header class="topbar">
-                    <span class="text-muted small">@adminEmail</span>
-                    <div class="d-flex gap-2">
+        @if (isAdminLoggedIn)
+        {
+        <nav class="navbar navbar-expand-lg admin-navbar" aria-label="Điều hướng Admin">
+            <div class="container-fluid admin-navbar-inner">
+                <a class="navbar-brand" asp-controller="Dashboard" asp-action="Index">Ebay Admin</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar" aria-controls="adminNavbar" aria-expanded="false" aria-label="Mở điều hướng">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="adminNavbar">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Dashboard" ? "active" : "")" aria-current="@(currentController == "Dashboard" ? "page" : null)" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Users" ? "active" : "")" aria-current="@(currentController == "Users" ? "page" : null)" asp-controller="Users" asp-action="Index">Người dùng</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Products" ? "active" : "")" aria-current="@(currentController == "Products" ? "page" : null)" asp-controller="Products" asp-action="Index">Sản phẩm</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Orders" ? "active" : "")" aria-current="@(currentController == "Orders" ? "page" : null)" asp-controller="Orders" asp-action="Index">Đơn hàng</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Disputes" ? "active" : "")" aria-current="@(currentController == "Disputes" ? "page" : null)" asp-controller="Disputes" asp-action="Index">Khiếu nại</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Feedbacks" ? "active" : "")" aria-current="@(currentController == "Feedbacks" ? "page" : null)" asp-controller="Feedbacks" asp-action="Index">Feedbacks</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "AuditLogs" ? "active" : "")" aria-current="@(currentController == "AuditLogs" ? "page" : null)" asp-controller="AuditLogs" asp-action="Index">Audit Logs</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(currentController == "Reports" ? "active" : "")" aria-current="@(currentController == "Reports" ? "page" : null)" asp-controller="Reports" asp-action="Index">Reports</a>
+                        </li>
+                    </ul>
+                    <div class="admin-navbar-actions d-flex align-items-lg-center gap-2">
+                        <span class="text-muted small">@adminEmail</span>
                         <button id="theme-toggle" class="btn btn-outline-secondary btn-sm" type="button" aria-label="Đổi giao diện sáng tối">Sáng/Tối</button>
-                        <form asp-controller="Account" asp-action="Logout" method="post">
+                        <form asp-controller="Account" asp-action="Logout" method="post" data-offline-allow="true">
                             <button class="btn btn-outline-danger btn-sm" type="submit">Đăng xuất</button>
                         </form>
                     </div>
-                </header>
-                <main id="main-content" class="page-content" tabindex="-1">
-                    @if (TempData["Success"] is string success)
-                    {
-                        <div class="alert alert-success" role="status">@success</div>
-                    }
-                    @if (TempData["Error"] is string error)
-                    {
-                        <div class="alert alert-danger" role="alert">@error</div>
-                    }
-                    @RenderBody()
-                </main>
+                </div>
             </div>
-        </div>
+        </nav>
+        }
+        else
+        {
+        <nav class="navbar navbar-expand-lg admin-navbar marketplace-navbar" aria-label="Điều hướng Marketplace">
+            <div class="container-fluid admin-navbar-inner">
+                <a class="navbar-brand" asp-controller="MarketplaceAccount" asp-action="@(marketplaceRole == "Seller" ? "SellerHome" : "UserHome")">Ebay Marketplace</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#marketplaceNavbar" aria-controls="marketplaceNavbar" aria-expanded="false" aria-label="Mở điều hướng">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="marketplaceNavbar">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link active" aria-current="page" asp-controller="MarketplaceAccount" asp-action="@(marketplaceRole == "Seller" ? "SellerHome" : "UserHome")">Trang chủ</a></li>
+                    </ul>
+                    <div class="admin-navbar-actions d-flex align-items-lg-center gap-2">
+                        <span class="badge bg-light text-dark">@marketplaceRole</span>
+                        <span class="text-muted small">@marketplaceEmail</span>
+                        <button id="theme-toggle" class="btn btn-outline-secondary btn-sm" type="button" aria-label="Đổi giao diện sáng tối">Sáng/Tối</button>
+                        <form asp-controller="MarketplaceAccount" asp-action="Logout" method="post" data-offline-allow="true">
+                            <button class="btn btn-outline-danger btn-sm" type="submit">Đăng xuất</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        }
+        <main id="main-content" class="page-content" tabindex="-1">
+            <div class="admin-container">
+                @if (isAdminLoggedIn && isOffline)
+                {
+                    <div class="offline-banner" role="status">
+                        <strong>Offline Mode</strong>
+                        <span>Không kết nối được Admin API. Đang hiển thị dữ liệu đã đệm; thao tác thay đổi dữ liệu đã bị vô hiệu hóa.</span>
+                    </div>
+                }
+                @if (TempData["Success"] is string success)
+                {
+                    <div class="alert alert-success" role="status">@success</div>
+                }
+                @if (TempData["Error"] is string error)
+                {
+                    <div class="alert alert-danger" role="alert">@error</div>
+                }
+                @RenderBody()
+            </div>
+        </main>
     }
     else
     {
         <main id="main-content" class="login-page" tabindex="-1">@RenderBody()</main>
     }
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@8.0.7/dist/browser/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

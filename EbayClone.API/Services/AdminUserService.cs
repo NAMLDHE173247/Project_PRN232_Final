@@ -7,14 +7,18 @@ namespace EbayClone.API.Services;
 public class AdminUserService(IUserRepository userRepository, IAuditRepository auditRepository) : IAdminUserService
 {
     public async Task<PagedResultDto<AdminUserDto>> GetUsersAsync(
+        string? search,
+        string? role,
         UserStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
-        var result = await userRepository.GetPageAsync(status, page, pageSize, cancellationToken);
+        var result = await userRepository.GetPageAsync(search, role, status, sort, direction, page, pageSize, cancellationToken);
         return new PagedResultDto<AdminUserDto>(
             page,
             pageSize,

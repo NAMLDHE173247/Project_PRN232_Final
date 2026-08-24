@@ -16,10 +16,12 @@ public class AdminOrderController(IAdminOrderService orderService) : ControllerB
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
         [FromQuery] int? buyerId,
+        [FromQuery] string? sort,
+        [FromQuery] string? direction,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default) =>
-        orderService.GetOrdersAsync(status, from, to, buyerId, page, pageSize, cancellationToken);
+        orderService.GetOrdersAsync(status, from, to, buyerId, sort, direction, page, pageSize, cancellationToken);
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDetailAdminDto>> GetDetail(int id, CancellationToken cancellationToken)

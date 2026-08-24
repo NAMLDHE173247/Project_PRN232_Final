@@ -7,14 +7,18 @@ namespace EbayClone.API.Services;
 public class AdminProductService(IProductRepository productRepository, IAuditRepository auditRepository) : IAdminProductService
 {
     public async Task<PagedProductResultDto<AdminProductDto>> GetProductsAsync(
+        string? search,
+        int? sellerId,
         ProductStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
-        var result = await productRepository.GetPageAsync(status, page, pageSize, cancellationToken);
+        var result = await productRepository.GetPageAsync(search, sellerId, status, sort, direction, page, pageSize, cancellationToken);
         return new PagedProductResultDto<AdminProductDto>(page, pageSize, result.Total, result.Items.Select(Map).ToList());
     }
 

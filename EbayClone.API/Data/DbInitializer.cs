@@ -32,6 +32,8 @@ public static class DbInitializer
 
         if (!configuration.GetValue<bool>("EnableDemoSeed")) return;
 
+        await NormalizeDemoMarketplaceRolesAsync(dbContext);
+
         if (await dbContext.Users.AnyAsync(x => x.Email == "demo.buyer@example.com"))
         {
             await EnsureSupplementaryDemoDataAsync(dbContext, admin);
@@ -43,7 +45,7 @@ public static class DbInitializer
             Email = "demo.seller@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo@123"),
             FullName = "Demo Seller",
-            Role = "User",
+            Role = "Seller",
             Status = UserStatus.Active,
             ApprovalStatus = "Approved",
             ApprovedBy = admin.Id,
@@ -109,6 +111,7 @@ public static class DbInitializer
         await dbContext.SaveChangesAsync();
 
         await AddSupplementaryDemoDataAsync(dbContext, admin, seller, buyer, headphones, keyboard, hiddenProduct);
+        await EnsureExtendedDemoDataAsync(dbContext, admin, seller, buyer, headphones, keyboard);
 
         var completedOrder = new OrderTable
         {
@@ -204,6 +207,33 @@ public static class DbInitializer
         }
 
         await AddSupplementaryDemoDataAsync(dbContext, admin, seller, buyer, headphones, keyboard, hiddenProduct);
+        await EnsureExtendedDemoDataAsync(dbContext, admin, seller, buyer, headphones, keyboard);
+    }
+
+    private static async Task NormalizeDemoMarketplaceRolesAsync(AppDbContext dbContext)
+    {
+        var demoEmails = new[]
+        {
+            "demo.moderator@example.com",
+            "demo.support@example.com",
+            "demo.seller@example.com",
+            "demo.test.seller2@example.com"
+        };
+
+        var demoUsers = await dbContext.Users
+            .Where(user => demoEmails.Contains(user.Email))
+            .ToListAsync();
+
+        var changed = false;
+        foreach (var demoUser in demoUsers)
+        {
+            var expectedRole = demoUser.Email.Contains("seller", StringComparison.OrdinalIgnoreCase) ? "Seller" : "User";
+            if (demoUser.Role == expectedRole) continue;
+            demoUser.Role = expectedRole;
+            changed = true;
+        }
+
+        if (changed) await dbContext.SaveChangesAsync();
     }
 
     private static async Task AddSupplementaryDemoDataAsync(
@@ -249,6 +279,208 @@ public static class DbInitializer
             });
         }
 
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task EnsureExtendedDemoDataAsync(
+        AppDbContext dbContext,
+        User admin,
+        User seller,
+        User buyer,
+        Product headphones,
+        Product keyboard)
+    {
+        if (await dbContext.Users.AnyAsync(x => x.Email == "demo.test.active2@example.com")) return;
+
+        var seller2 = new User
+        {
+            Email = "demo.test.seller2@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo@123"),
+            FullName = "Demo Test Seller 2",
+            Role = "Seller",
+            Status = UserStatus.Active,
+            ApprovalStatus = "Approved",
+            ApprovedBy = admin.Id,
+            ApprovedAt = DateTime.UtcNow.AddDays(-15)
+        };
+        var buyer2 = new User
+        {
+            Email = "demo.test.active2@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo@123"),
+            FullName = "Demo Test Active User 2",
+            Role = "User",
+            Status = UserStatus.Active,
+            ApprovalStatus = "Approved",
+            ApprovedBy = admin.Id,
+            ApprovedAt = DateTime.UtcNow.AddDays(-12)
+        };
+        var pending2 = new User
+        {
+            Email = "demo.test.pending2@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo@123"),
+            FullName = "Demo Test Pending User 2",
+            Role = "User",
+            Status = UserStatus.Pending,
+            ApprovalStatus = "PendingApproval"
+        };
+        var banned2 = new User
+        {
+            Email = "demo.test.banned2@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo@123"),
+            FullName = "Demo Test Banned User 2",
+            Role = "User",
+            Status = UserStatus.Banned,
+            ApprovalStatus = "Approved",
+            BannedReason = "Extended demo moderation data",
+            BannedBy = admin.Id,
+            BannedAt = DateTime.UtcNow.AddDays(-5)
+        };
+        dbContext.Users.AddRange(seller2, buyer2, pending2, banned2);
+        await dbContext.SaveChangesAsync();
+
+        var camera = new Product
+        {
+            Name = "Demo Test Mirrorless Camera",
+            Price = 799.00m,
+            SellerId = seller2.Id,
+            Status = ProductStatus.Active
+        };
+        var monitor = new Product
+        {
+            Name = "Demo Test 4K Monitor",
+            Price = 349.99m,
+            SellerId = seller2.Id,
+            Status = ProductStatus.Active
+        };
+        var hiddenAccessory = new Product
+        {
+            Name = "Demo Test Hidden Camera Accessory",
+            Price = 39.99m,
+            SellerId = seller2.Id,
+            Status = ProductStatus.Hidden
+        };
+        dbContext.Products.AddRange(camera, monitor, hiddenAccessory);
+        await dbContext.SaveChangesAsync();
+
+        var paidOrder = new OrderTable
+        {
+            BuyerId = buyer2.Id,
+            OrderDate = DateTime.UtcNow.AddDays(-10),
+            TotalPrice = camera.Price,
+            Status = nameof(OrderStatus.Paid)
+        };
+        var shippingOrder = new OrderTable
+        {
+            BuyerId = buyer2.Id,
+            OrderDate = DateTime.UtcNow.AddDays(-4),
+            TotalPrice = monitor.Price,
+            Status = nameof(OrderStatus.Shipping)
+        };
+        var cancelledOrder = new OrderTable
+        {
+            BuyerId = buyer.Id,
+            OrderDate = DateTime.UtcNow.AddDays(-14),
+            TotalPrice = hiddenAccessory.Price,
+            Status = nameof(OrderStatus.Cancelled)
+        };
+        dbContext.Orders.AddRange(paidOrder, shippingOrder, cancelledOrder);
+        await dbContext.SaveChangesAsync();
+
+        dbContext.OrderItems.AddRange(
+            new OrderItem { OrderId = paidOrder.Id, ProductId = camera.Id, Quantity = 1, UnitPrice = camera.Price },
+            new OrderItem { OrderId = shippingOrder.Id, ProductId = monitor.Id, Quantity = 1, UnitPrice = monitor.Price },
+            new OrderItem { OrderId = cancelledOrder.Id, ProductId = hiddenAccessory.Id, Quantity = 1, UnitPrice = hiddenAccessory.Price });
+        dbContext.Payments.AddRange(
+            new Payment { OrderId = paidOrder.Id, UserId = buyer2.Id, Amount = paidOrder.TotalPrice, Method = "DemoBanking", Status = "Paid", PaidAt = DateTime.UtcNow.AddDays(-9) },
+            new Payment { OrderId = shippingOrder.Id, UserId = buyer2.Id, Amount = shippingOrder.TotalPrice, Method = "DemoWallet", Status = "Paid", PaidAt = DateTime.UtcNow.AddDays(-3) },
+            new Payment { OrderId = cancelledOrder.Id, UserId = buyer.Id, Amount = cancelledOrder.TotalPrice, Method = "DemoCard", Status = "Refunded" });
+        dbContext.ShippingInfos.AddRange(
+            new ShippingInfo { OrderId = paidOrder.Id, Carrier = "Test Carrier", TrackingNumber = "TEST-PAID-001", Status = "AwaitingShipment", EstimatedArrival = DateTime.UtcNow.AddDays(2) },
+            new ShippingInfo { OrderId = shippingOrder.Id, Carrier = "Test Carrier", TrackingNumber = "TEST-SHIP-001", Status = "InTransit", EstimatedArrival = DateTime.UtcNow.AddDays(1) },
+            new ShippingInfo { OrderId = cancelledOrder.Id, Carrier = "Test Carrier", TrackingNumber = "TEST-CANCEL-001", Status = "Cancelled" });
+        await dbContext.SaveChangesAsync();
+
+        var resolvedDispute = new Dispute
+        {
+            OrderId = paidOrder.Id,
+            RaisedBy = buyer2.Id,
+            Description = "Extended demo dispute resolved by the admin.",
+            Status = nameof(DisputeStatus.Resolved),
+            Resolution = "Refund approved",
+            AssignedTo = admin.Id,
+            AssignedAt = DateTime.UtcNow.AddDays(-6),
+            ResolvedBy = admin.Id,
+            ResolvedAt = DateTime.UtcNow.AddDays(-5)
+        };
+        var rejectedDispute = new Dispute
+        {
+            OrderId = cancelledOrder.Id,
+            RaisedBy = buyer.Id,
+            Description = "Extended demo dispute rejected for testing.",
+            Status = nameof(DisputeStatus.Rejected),
+            Resolution = "Insufficient evidence",
+            AssignedTo = admin.Id,
+            AssignedAt = DateTime.UtcNow.AddDays(-8),
+            ResolvedBy = admin.Id,
+            ResolvedAt = DateTime.UtcNow.AddDays(-7)
+        };
+        dbContext.Disputes.AddRange(resolvedDispute, rejectedDispute);
+        dbContext.Reviews.AddRange(
+            new Review
+            {
+                ProductId = camera.Id,
+                ReviewerId = buyer2.Id,
+                Rating = 4,
+                Comment = "Demo test review: Good image quality.",
+                CreatedAt = DateTime.UtcNow.AddDays(-8),
+                Status = ReviewStatus.Visible
+            },
+            new Review
+            {
+                ProductId = monitor.Id,
+                ReviewerId = buyer2.Id,
+                Rating = 2,
+                Comment = "Demo test review: Hidden for moderation test.",
+                CreatedAt = DateTime.UtcNow.AddDays(-6),
+                Status = ReviewStatus.Hidden
+            });
+        dbContext.Feedbacks.Add(new Feedback
+        {
+            SellerId = seller2.Id,
+            AverageRating = 3.50m,
+            TotalReviews = 8,
+            PositiveRate = 62.50m
+        });
+        await dbContext.SaveChangesAsync();
+
+        dbContext.AuditLogs.AddRange(
+            new AuditLog
+            {
+                ActorId = admin.Id,
+                Action = "RESOLVE_DISPUTE",
+                Resource = "DISPUTE",
+                ResourceId = resolvedDispute.Id,
+                Metadata = "{\"seed\":true,\"scenario\":\"resolved\"}",
+                CreatedAtUtc = DateTime.UtcNow.AddDays(-5)
+            },
+            new AuditLog
+            {
+                ActorId = admin.Id,
+                Action = "REJECT_DISPUTE",
+                Resource = "DISPUTE",
+                ResourceId = rejectedDispute.Id,
+                Metadata = "{\"seed\":true,\"scenario\":\"rejected\"}",
+                CreatedAtUtc = DateTime.UtcNow.AddDays(-7)
+            },
+            new AuditLog
+            {
+                ActorId = admin.Id,
+                Action = "HIDE_PRODUCT",
+                Resource = "PRODUCT",
+                ResourceId = hiddenAccessory.Id,
+                Metadata = "{\"seed\":true,\"scenario\":\"extended-demo\"}",
+                CreatedAtUtc = DateTime.UtcNow.AddDays(-6)
+            });
         await dbContext.SaveChangesAsync();
     }
 }

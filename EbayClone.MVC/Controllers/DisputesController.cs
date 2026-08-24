@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EbayClone.MVC.Controllers;
 
 [AdminSession]
-public class DisputesController(AdminApiClient apiClient) : AdminMvcController
+public class DisputesController(AdminApiClient apiClient, AdminNotificationService notifications) : AdminMvcController
 {
     public async Task<IActionResult> Index(string? status, int page = 1, CancellationToken cancellationToken = default)
     {
@@ -39,6 +39,7 @@ public class DisputesController(AdminApiClient apiClient) : AdminMvcController
         {
             await apiClient.PutAsync<DisputeViewModel>($"api/admin/disputes/{id}/{action}", body, cancellationToken);
             TempData["Success"] = "Cập nhật khiếu nại thành công.";
+            await notifications.BroadcastAsync("Trạng thái khiếu nại đã được cập nhật.", cancellationToken: cancellationToken);
             return RedirectToAction(nameof(Details), new { id });
         }
         catch (AdminApiException exception)

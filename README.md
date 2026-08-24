@@ -50,7 +50,7 @@ Requirements: .NET 8 and SQL Server LocalDB.
 
 ```powershell
 dotnet build EbayClone.sln
-dotnet run --project EbayClone.API --urls http://127.0.0.1:5088
+dotnet run --project EbayClone.API --urls http://localhost:5173
 dotnet run --project EbayClone.MVC --urls http://127.0.0.1:5090
 ```
 
@@ -77,20 +77,14 @@ Demo data is controlled by `EnableDemoSeed`. It is enabled in the Development ex
 
 ## Authorization design
 
-The current system uses Role-Based Authorization with one administrative role:
+The current system uses Role-Based Authorization with one Admin Panel role:
 
-| Module | Admin permissions |
+| Area | Access |
 | --- | --- |
-| Dashboard | View statistics |
-| Users | View, approve, block, unblock |
-| Products | View, hide, unhide |
-| Orders | View list and details |
-| Disputes | View, assign, resolve, reject |
-| Reviews | View, hide, unhide |
-| Feedbacks | View and monitor |
-| Audit Logs | View |
+| Admin Panel | Only users with the `Admin` role |
+| Marketplace | Regular `User` accounts and their buyer/seller business behavior |
 
-Every Admin API controller requires a valid JWT with the `Admin` role. Permission-based authorization can be added later if the system introduces multiple administrator levels; it is intentionally outside the current MVP scope.
+All Admin API controllers require a valid JWT with the `Admin` role. Regular `User` accounts cannot access the Admin Panel or Admin API.
 
 ## Health check
 
@@ -110,6 +104,8 @@ The local demo account is configured by `AdminAccount` settings:
 Email: admin@gmail.com
 Password: Admin@123
 ```
+
+The marketplace demo accounts use the password `Demo@123`; they have the regular `User` role and cannot access the Admin Panel.
 
 For Docker, set `ADMIN_PASSWORD` in `.env`; do not commit real credentials.
 

@@ -14,11 +14,15 @@ public class AdminProductController(IAdminProductService productService) : Contr
 {
     [HttpGet]
     public Task<PagedProductResultDto<AdminProductDto>> GetProducts(
+        [FromQuery] string? search,
+        [FromQuery] int? sellerId,
         [FromQuery] ProductStatus? status,
+        [FromQuery] string? sort,
+        [FromQuery] string? direction,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default) =>
-        productService.GetProductsAsync(status, page, pageSize, cancellationToken);
+        productService.GetProductsAsync(search, sellerId, status, sort, direction, page, pageSize, cancellationToken);
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<AdminProductDto>> GetById(int id, CancellationToken cancellationToken)

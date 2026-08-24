@@ -20,4 +20,6 @@ public class DashboardController(AdminApiClient apiClient) : AdminMvcController
             return HandleApiFailure(exception);
         }
     }
+
+    public IActionResult Offline() => View();
 }

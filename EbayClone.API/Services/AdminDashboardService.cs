@@ -16,6 +16,14 @@ public class AdminDashboardService(IDashboardRepository dashboardRepository) : I
         var hiddenProducts = await dashboardRepository.CountHiddenProductsAsync(cancellationToken);
         var pendingDisputes = await dashboardRepository.CountPendingDisputesAsync(cancellationToken);
 
+        var alerts = new List<DashboardAlertDto>();
+        if (pendingDisputes > 0)
+            alerts.Add(new("danger", "Khiếu nại cần xử lý", $"Có {pendingDisputes} khiếu nại đang chờ xử lý.", "Disputes", "Index"));
+        if (hiddenProducts > 0)
+            alerts.Add(new("warning", "Sản phẩm đang bị ẩn", $"Có {hiddenProducts} sản phẩm cần được kiểm duyệt.", "Products", "Index"));
+        if (bannedUsers > 0)
+            alerts.Add(new("warning", "Tài khoản bị khóa", $"Hiện có {bannedUsers} tài khoản đang bị khóa.", "Users", "Index"));
+
         return new DashboardDto(
             totalUsers,
             totalProducts,
@@ -24,6 +32,7 @@ public class AdminDashboardService(IDashboardRepository dashboardRepository) : I
             activeUsers,
             bannedUsers,
             hiddenProducts,
-            pendingDisputes);
+            pendingDisputes,
+            alerts);
     }
 }

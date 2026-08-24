@@ -11,6 +11,8 @@ public class OrderRepository(AppDbContext dbContext) : IOrderRepository
         DateTime? from,
         DateTime? to,
         int? buyerId,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -21,21 +23,29 @@ public class OrderRepository(AppDbContext dbContext) : IOrderRepository
         if (from.HasValue)
             orders = orders.Where(order => order.OrderDate >= from.Value);
         if (to.HasValue)
-            orders = orders.Where(order => order.OrderDate <= to.Value);
+            orders = orders.Where(order => order.OrderDate < to.Value.Date.AddDays(1));
         if (buyerId.HasValue)
             orders = orders.Where(order => order.BuyerId == buyerId.Value);
 
+        var descending = !string.Equals(direction, "asc", StringComparison.OrdinalIgnoreCase);
+        var orderedOrders = (sort?.Trim().ToLowerInvariant()) switch
+        {
+            "date" => descending ? orders.OrderByDescending(order => order.OrderDate).ThenByDescending(order => order.Id) : orders.OrderBy(order => order.OrderDate).ThenBy(order => order.Id),
+            "amount" => descending ? orders.OrderByDescending(order => order.TotalPrice).ThenByDescending(order => order.Id) : orders.OrderBy(order => order.TotalPrice).ThenBy(order => order.Id),
+            "buyer" => descending ? orders.OrderByDescending(order => order.BuyerId).ThenByDescending(order => order.Id) : orders.OrderBy(order => order.BuyerId).ThenBy(order => order.Id),
+            "status" => descending ? orders.OrderByDescending(order => order.Status).ThenByDescending(order => order.Id) : orders.OrderBy(order => order.Status).ThenBy(order => order.Id),
+            _ => descending ? orders.OrderByDescending(order => order.Id) : orders.OrderBy(order => order.Id)
+        };
+
         var total = await orders.CountAsync(cancellationToken);
-        var items = await (
-            from order in orders
-            join buyer in dbContext.Users.AsNoTracking()
-                on order.BuyerId equals (int?)buyer.Id into buyers
-            from buyer in buyers.DefaultIfEmpty()
-            orderby order.Id descending
-            select new OrderAdminDto(
+        var items = await orderedOrders
+            .Select(order => new OrderAdminDto(
                 order.Id,
                 order.BuyerId,
-                buyer == null ? null : buyer.FullName,
+                dbContext.Users.AsNoTracking()
+                    .Where(user => (int?)user.Id == order.BuyerId)
+                    .Select(user => user.FullName)
+                    .FirstOrDefault(),
                 order.Status,
                 order.TotalPrice ?? 0m,
                 order.OrderDate))

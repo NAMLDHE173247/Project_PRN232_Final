@@ -11,6 +11,9 @@ public class AccountController(AdminApiClient apiClient) : Controller
     {
         if (!string.IsNullOrWhiteSpace(HttpContext.Session.GetString("AdminToken")))
             return RedirectToAction("Index", "Dashboard");
+        var marketplaceRole = HttpContext.Session.GetString("MarketplaceAccountType");
+        if (!string.IsNullOrWhiteSpace(HttpContext.Session.GetString("MarketplaceToken")))
+            return RedirectToAction(marketplaceRole == "Seller" ? "SellerHome" : "UserHome", "MarketplaceAccount");
         return View(new LoginInputModel());
     }
 
@@ -21,19 +24,32 @@ public class AccountController(AdminApiClient apiClient) : Controller
         try
         {
             var response = await apiClient.LoginAsync(input, cancellationToken);
-            if (response is null || !string.Equals(response.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            if (response is null || response.Role is not ("Admin" or "User" or "Seller"))
             {
-                ModelState.AddModelError(string.Empty, "Tài khoản không có quyền Admin.");
+                ModelState.AddModelError(string.Empty, "Tài khoản không có role hợp lệ.");
                 return View(input);
             }
 
-            HttpContext.Session.SetString("AdminToken", response.Token);
-            HttpContext.Session.SetString("AdminEmail", response.Email);
-            return RedirectToAction("Index", "Dashboard");
+            if (response.Role == "Admin")
+            {
+                HttpContext.Session.Remove("MarketplaceToken");
+                HttpContext.Session.Remove("MarketplaceEmail");
+                HttpContext.Session.Remove("MarketplaceAccountType");
+                HttpContext.Session.SetString("AdminToken", response.Token);
+                HttpContext.Session.SetString("AdminEmail", response.Email);
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            HttpContext.Session.Remove("AdminToken");
+            HttpContext.Session.Remove("AdminEmail");
+            HttpContext.Session.SetString("MarketplaceToken", response.Token);
+            HttpContext.Session.SetString("MarketplaceEmail", response.Email);
+            HttpContext.Session.SetString("MarketplaceAccountType", response.Role);
+            return RedirectToAction(response.Role == "Seller" ? "SellerHome" : "UserHome", "MarketplaceAccount");
         }
         catch (AdminApiException)
         {
-            ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng.");
+            ModelState.AddModelError(string.Empty, "Đăng nhập thất bại. Tài khoản có thể chưa được duyệt, đã bị khóa hoặc thông tin không đúng.");
             return View(input);
         }
         catch (HttpRequestException)

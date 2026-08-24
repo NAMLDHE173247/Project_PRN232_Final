@@ -1,0 +1,19 @@
+@model ReportSectionViewModel
+<div class="col-12 col-lg-6">
+    <section class="panel h-100" aria-labelledby="report-@Model.Title.GetHashCode()">
+        <h2 class="h6 mb-3" id="report-@Model.Title.GetHashCode()">@Model.Title</h2>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="text-muted mb-0">Chưa có dữ liệu.</p>
+        }
+        else
+        {
+            <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Nhóm</th><th class="text-end">Số lượng</th>@if (Model.ShowAmount){<th class="text-end">Tổng tiền</th>}</tr></thead><tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr><td>@item.Label</td><td class="text-end">@item.Count</td>@if (Model.ShowAmount){<td class="text-end">@item.Amount.ToString("N0")</td>}</tr>
+            }
+            </tbody></table></div>
+        }
+    </section>
+</div>

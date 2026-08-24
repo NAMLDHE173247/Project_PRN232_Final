@@ -6,13 +6,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace EbayClone.MVC.Controllers;
 
 [AdminSession]
-public class ProductsController(AdminApiClient apiClient) : AdminMvcController
+public class ProductsController(AdminApiClient apiClient, AdminNotificationService notifications) : AdminMvcController
 {
-    public async Task<IActionResult> Index(string? status, int page = 1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index(string? search, int? sellerId, string? status, string? sort, string? direction, int page = 1, CancellationToken cancellationToken = default)
     {
         var query = $"api/admin/products?page={Math.Max(page, 1)}&pageSize=20";
+        if (!string.IsNullOrWhiteSpace(search)) query += $"&search={Uri.EscapeDataString(search)}";
+        if (sellerId.HasValue) query += $"&sellerId={sellerId.Value}";
         if (!string.IsNullOrWhiteSpace(status)) query += $"&status={Uri.EscapeDataString(status)}";
+        if (!string.IsNullOrWhiteSpace(sort)) query += $"&sort={Uri.EscapeDataString(sort)}";
+        if (!string.IsNullOrWhiteSpace(direction)) query += $"&direction={Uri.EscapeDataString(direction)}";
+        ViewBag.Search = search;
+        ViewBag.SellerId = sellerId;
         ViewBag.Status = status;
+        ViewBag.Sort = sort;
+        ViewBag.Direction = direction;
         return View(await apiClient.GetAsync<PagedViewModel<AdminProductViewModel>>(query, cancellationToken));
     }
 
@@ -28,6 +36,7 @@ public class ProductsController(AdminApiClient apiClient) : AdminMvcController
         {
             await apiClient.PutAsync<AdminProductViewModel>($"api/admin/products/{id}/{action}", null, cancellationToken);
             TempData["Success"] = "Cập nhật sản phẩm thành công.";
+            await notifications.BroadcastAsync("Danh sách sản phẩm đã được cập nhật.", cancellationToken: cancellationToken);
             return RedirectToAction(nameof(Index));
         }
         catch (AdminApiException exception)

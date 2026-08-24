@@ -8,4 +8,12 @@ public record DashboardDto(
     int ActiveUsers,
     int BannedUsers,
     int HiddenProducts,
-    int PendingDisputes);
+    int PendingDisputes,
+    IReadOnlyList<DashboardAlertDto> Alerts);
+
+public record DashboardAlertDto(
+    string Severity,
+    string Title,
+    string Message,
+    string Controller,
+    string Action);

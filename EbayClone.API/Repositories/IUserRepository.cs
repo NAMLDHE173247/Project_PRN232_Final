@@ -6,7 +6,11 @@ public interface IUserRepository
 {
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(
+        string? search,
+        string? role,
         UserStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);

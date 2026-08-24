@@ -6,7 +6,11 @@ namespace EbayClone.API.Services;
 public interface IAdminProductService
 {
     Task<PagedProductResultDto<AdminProductDto>> GetProductsAsync(
+        string? search,
+        int? sellerId,
         ProductStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);

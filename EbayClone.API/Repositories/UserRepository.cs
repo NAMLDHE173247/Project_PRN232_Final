@@ -14,18 +14,37 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     }
 
     public async Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(
+        string? search,
+        string? role,
         UserStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = dbContext.Users.AsNoTracking().OrderBy(user => user.Id);
-        var filteredQuery = status.HasValue
-            ? query.Where(user => user.Status == status.Value)
-            : query;
+        var query = dbContext.Users.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var keyword = search.Trim();
+            query = query.Where(user => user.Email.Contains(keyword) || user.FullName.Contains(keyword));
+        }
+        if (!string.IsNullOrWhiteSpace(role))
+            query = query.Where(user => user.Role == role.Trim());
+        if (status.HasValue)
+            query = query.Where(user => user.Status == status.Value);
 
-        var total = await filteredQuery.CountAsync(cancellationToken);
-        var items = await filteredQuery
+        var descending = string.Equals(direction, "desc", StringComparison.OrdinalIgnoreCase);
+        var orderedQuery = (sort?.Trim().ToLowerInvariant()) switch
+        {
+            "name" => descending ? query.OrderByDescending(user => user.FullName).ThenByDescending(user => user.Id) : query.OrderBy(user => user.FullName).ThenBy(user => user.Id),
+            "email" => descending ? query.OrderByDescending(user => user.Email).ThenByDescending(user => user.Id) : query.OrderBy(user => user.Email).ThenBy(user => user.Id),
+            "status" => descending ? query.OrderByDescending(user => user.Status).ThenByDescending(user => user.Id) : query.OrderBy(user => user.Status).ThenBy(user => user.Id),
+            _ => descending ? query.OrderByDescending(user => user.Id) : query.OrderBy(user => user.Id)
+        };
+
+        var total = await orderedQuery.CountAsync(cancellationToken);
+        var items = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

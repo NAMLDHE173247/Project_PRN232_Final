@@ -14,12 +14,16 @@ public class AdminUserController(IAdminUserService userService) : ControllerBase
 {
     [HttpGet]
     public Task<PagedResultDto<AdminUserDto>> GetUsers(
+        [FromQuery] string? search,
+        [FromQuery] string? role,
         [FromQuery] UserStatus? status,
+        [FromQuery] string? sort,
+        [FromQuery] string? direction,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        return userService.GetUsersAsync(status, page, pageSize, cancellationToken);
+        return userService.GetUsersAsync(search, role, status, sort, direction, page, pageSize, cancellationToken);
     }
 
     [HttpGet("{id:int}")]

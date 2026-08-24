@@ -6,7 +6,11 @@ namespace EbayClone.API.Services;
 public interface IAdminUserService
 {
     Task<PagedResultDto<AdminUserDto>> GetUsersAsync(
+        string? search,
+        string? role,
         UserStatus? status,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);

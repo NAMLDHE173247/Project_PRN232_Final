@@ -10,6 +10,8 @@ public class AdminOrderService(IOrderRepository orderRepository) : IAdminOrderSe
         DateTime? from,
         DateTime? to,
         int? buyerId,
+        string? sort,
+        string? direction,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default)
@@ -21,6 +23,8 @@ public class AdminOrderService(IOrderRepository orderRepository) : IAdminOrderSe
             from,
             to,
             buyerId,
+            sort,
+            direction,
             page,
             pageSize,
             cancellationToken);
