@@ -49,10 +49,14 @@
     const type = notification?.type === "error" ? "danger" : (notification?.type ?? "success");
     toast.className = `toast align-items-center text-bg-${type} border-0`;
     toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    toast.setAttribute("aria-atomic", "true");
     toast.innerHTML = `<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="Đóng thông báo"></button></div>`;
     toast.querySelector(".toast-body").textContent = notification?.message ?? "Có cập nhật mới.";
     toast.querySelector("button").addEventListener("click", () => toast.remove());
     container.appendChild(toast);
+    // Bootstrap starts a toast hidden; show it immediately for reliable visibility.
+    toast.classList.add("show");
 
     if (window.bootstrap?.Toast) {
       const instance = bootstrap.Toast.getOrCreateInstance(toast, { autohide: true, delay: 8000 });

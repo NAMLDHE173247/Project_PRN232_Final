@@ -1,56 +1,101 @@
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver_db
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${SA_PASSWORD}
-      - MSSQL_PID=Developer
+      ACCEPT_EULA: Y
+      SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: Developer
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/1433' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
-  api:
+  api1:
     build:
       context: .
       dockerfile: EbayClone.API/Dockerfile
-    container_name: ebayclone_api
+    environment: &api-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      EnableDemoSeed: ${ENABLE_DEMO_SEED:-true}
+      ConnectionStrings__MyCnn: Server=sqlserver;Database=CloneEbayDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
+      Jwt__Key: ${JWT_KEY}
+      AdminAccount__Email: ${ADMIN_EMAIL:-admin@gmail.com}
+      AdminAccount__Password: ${ADMIN_PASSWORD}
     depends_on:
-      - sqlserver
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - EnableDemoSeed=true
-      - ConnectionStrings__MyCnn=Server=sqlserver;Database=CloneEbayDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
-      - Jwt__Key=${JWT_KEY}
-      - AdminAccount__Email=admin@gmail.com
-      - AdminAccount__Password=${ADMIN_PASSWORD}
-    ports:
-      - "8081:8080"
-    
+      sqlserver:
+        condition: service_healthy
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+
+  api2:
+    build:
+      context: .
+      dockerfile: EbayClone.API/Dockerfile
+    environment: *api-environment
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+
   mvc:
     build:
       context: .
       dockerfile: EbayClone.MVC/Dockerfile
-    container_name: ebayclone_mvc
-    depends_on:
-      - api
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ApiBaseUrl=http://api:8080/
-    ports:
-      - "8082:8080"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ApiBaseUrl: http://nginx/
+    depends_on:
+      api1:
+        condition: service_healthy
+      api2:
+        condition: service_healthy
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health/api"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
 
   nginx:
-    image: nginx:latest
-    container_name: nginx_proxy
+    image: nginx:1.27-alpine
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - api
-      - mvc
+      api1:
+        condition: service_healthy
+      api2:
+        condition: service_healthy
+      mvc:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   sqlserver_data:

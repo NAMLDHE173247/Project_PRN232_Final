@@ -11,23 +11,20 @@ public partial class AddAuditLog : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.CreateTable(
-            name: "AuditLog",
-            columns: table => new
-            {
-                Id = table.Column<long>(type: "bigint", nullable: false)
-                    .Annotation("SqlServer:Identity", "1, 1"),
-                ActorId = table.Column<int>(type: "int", nullable: true),
-                Action = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                Resource = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                ResourceId = table.Column<int>(type: "int", nullable: true),
-                Metadata = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
-            },
-            constraints: table =>
-            {
-                table.PrimaryKey("PK_AuditLog", x => x.Id);
-            });
+        migrationBuilder.Sql(@"
+IF OBJECT_ID(N'[AuditLog]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [AuditLog] (
+        [Id] bigint NOT NULL IDENTITY,
+        [ActorId] int NULL,
+        [Action] nvarchar(100) NOT NULL,
+        [Resource] nvarchar(100) NOT NULL,
+        [ResourceId] int NULL,
+        [Metadata] nvarchar(max) NULL,
+        [CreatedAtUtc] datetime2 NOT NULL,
+        CONSTRAINT [PK_AuditLog] PRIMARY KEY ([Id])
+    );
+END");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
