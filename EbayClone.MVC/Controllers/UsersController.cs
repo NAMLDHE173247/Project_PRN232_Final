@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EbayClone.MVC.Controllers;
 
 [AdminSession]
-public class UsersController(AdminApiClient apiClient, AdminNotificationService notifications) : AdminMvcController
+public class UsersController(AdminApiClient apiClient) : AdminMvcController
 {
     public async Task<IActionResult> Index(string? search, string? role, string? status, string? sort, string? direction, int page = 1, CancellationToken cancellationToken = default)
     {
@@ -25,29 +25,19 @@ public class UsersController(AdminApiClient apiClient, AdminNotificationService 
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> Approve(int id, CancellationToken cancellationToken) =>
-        RunAction($"api/admin/users/{id}/approve", null, cancellationToken);
+    public Task<IActionResult> Approve(int id, CancellationToken cancellationToken) => RunAction(id, "approve", null, cancellationToken);
 
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> Block(int id, string reason, CancellationToken cancellationToken) =>
-        RunAction($"api/admin/users/{id}/block", new { reason }, cancellationToken);
+    public Task<IActionResult> Ban(int id, string reason, CancellationToken cancellationToken) => RunAction(id, "ban", new { reason }, cancellationToken);
 
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> Unblock(int id, CancellationToken cancellationToken) =>
-        RunAction($"api/admin/users/{id}/unblock", null, cancellationToken);
+    public Task<IActionResult> Unban(int id, CancellationToken cancellationToken) => RunAction(id, "unban", null, cancellationToken);
 
-    private async Task<IActionResult> RunAction(string path, object? body, CancellationToken cancellationToken)
+    private async Task<IActionResult> RunAction(int id, string action, object? body, CancellationToken cancellationToken)
     {
-        try
-        {
-            await apiClient.PutAsync<AdminUserViewModel>(path, body, cancellationToken);
-            TempData["Success"] = "Cập nhật người dùng thành công.";
-            await notifications.BroadcastAsync("Danh sách người dùng đã được cập nhật.", cancellationToken: cancellationToken);
-            return RedirectToAction(nameof(Index));
-        }
-        catch (AdminApiException exception)
-        {
-            return HandleApiFailure(exception);
-        }
+        try { await apiClient.PutAsync<AdminUserViewModel>($"api/admin/users/{id}/{action}", body, cancellationToken); TempData["Success"] = $"User #{id}: {action}."; }
+        catch (AdminApiException exception) { return HandleApiFailure(exception); }
+        return RedirectToAction(nameof(Index));
     }
+
 }

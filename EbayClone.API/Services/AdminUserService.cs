@@ -4,26 +4,16 @@ using EbayClone.API.Repositories;
 
 namespace EbayClone.API.Services;
 
-public class AdminUserService(IUserRepository userRepository, IAuditRepository auditRepository) : IAdminUserService
+public class AdminUserService(IUserRepository userRepository, IAdminAuditRepository auditRepository) : IAdminUserService
 {
     public async Task<PagedResultDto<AdminUserDto>> GetUsersAsync(
-        string? search,
-        string? role,
-        UserStatus? status,
-        string? sort,
-        string? direction,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken = default)
+        string? search, string? role, string? status, string? sort, string? direction,
+        int page, int pageSize, CancellationToken cancellationToken = default)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
         var result = await userRepository.GetPageAsync(search, role, status, sort, direction, page, pageSize, cancellationToken);
-        return new PagedResultDto<AdminUserDto>(
-            page,
-            pageSize,
-            result.Total,
-            result.Items.Select(Map).ToList());
+        return new(page, pageSize, result.Total, result.Items.Select(Map).ToList());
     }
 
     public async Task<AdminUserDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -32,78 +22,30 @@ public class AdminUserService(IUserRepository userRepository, IAuditRepository a
         return user is null ? null : Map(user);
     }
 
-    public async Task<AdminUserDto?> ApproveAsync(int userId, int adminId, CancellationToken cancellationToken = default)
-    {
-        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null) return null;
-        if (user.Status != UserStatus.Pending)
-            throw new InvalidOperationException("Only pending users can be approved.");
+    public Task<AdminUserDto?> ApproveAsync(int id, int adminId, CancellationToken cancellationToken = default) =>
+        ChangeStatusAsync(id, adminId, "Pending", "Active", "APPROVE_USER", null, cancellationToken);
 
-        user.Status = UserStatus.Active;
-        user.ApprovalStatus = "Approved";
-        user.ApprovedBy = adminId;
-        user.ApprovedAt = DateTime.UtcNow;
+    public Task<AdminUserDto?> BanAsync(int id, int adminId, string reason, CancellationToken cancellationToken = default) =>
+        ChangeStatusAsync(id, adminId, "Active", "Banned", "BAN_USER", reason.Trim(), cancellationToken);
+
+    public Task<AdminUserDto?> UnbanAsync(int id, int adminId, CancellationToken cancellationToken = default) =>
+        ChangeStatusAsync(id, adminId, "Banned", "Active", "UNBAN_USER", null, cancellationToken);
+
+    private async Task<AdminUserDto?> ChangeStatusAsync(int id, int adminId, string expected, string next, string action, string? reason, CancellationToken cancellationToken)
+    {
+        var user = await userRepository.GetByIdAsync(id, cancellationToken);
+        if (user is null) return null;
+        if (user.Role == "Admin") throw new InvalidOperationException("Admin accounts cannot be moderated through user operations.");
+        if (user.ModerationStatus != expected) throw new InvalidOperationException($"Only {expected} users can perform this transition.");
+        user.ModerationStatus = next;
+        user.ModerationReason = reason;
+        user.ModeratedBy = adminId;
+        user.ModeratedAtUtc = DateTime.UtcNow;
+        auditRepository.Add(adminId, action, "User", id, reason);
         await userRepository.SaveChangesAsync(cancellationToken);
-        await WriteAuditAsync(adminId, "APPROVE_USER", user.Id, cancellationToken);
         return Map(user);
     }
 
-    public async Task<AdminUserDto?> BlockAsync(int userId, int adminId, string reason, CancellationToken cancellationToken = default)
-    {
-        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null) return null;
-        if (user.Status != UserStatus.Active)
-            throw new InvalidOperationException("Only active users can be banned.");
-
-        user.Status = UserStatus.Banned;
-        user.BannedReason = reason.Trim();
-        user.BannedBy = adminId;
-        user.BannedAt = DateTime.UtcNow;
-        await userRepository.SaveChangesAsync(cancellationToken);
-        await WriteAuditAsync(adminId, "BLOCK_USER", user.Id, cancellationToken);
-        return Map(user);
-    }
-
-    public async Task<AdminUserDto?> UnblockAsync(int userId, int adminId, CancellationToken cancellationToken = default)
-    {
-        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null) return null;
-        if (user.Status != UserStatus.Banned)
-            throw new InvalidOperationException("Only banned users can be unblocked.");
-
-        user.Status = UserStatus.Active;
-        user.BannedReason = null;
-        user.BannedBy = null;
-        user.BannedAt = null;
-        await userRepository.SaveChangesAsync(cancellationToken);
-        await WriteAuditAsync(adminId, "UNBLOCK_USER", user.Id, cancellationToken);
-        return Map(user);
-    }
-
-    private Task WriteAuditAsync(
-        int adminId,
-        string action,
-        int userId,
-        CancellationToken cancellationToken)
-    {
-        return auditRepository.AddAsync(new AuditLog
-        {
-            ActorId = adminId,
-            Action = action,
-            Resource = "USER",
-            ResourceId = userId,
-            CreatedAtUtc = DateTime.UtcNow
-        }, cancellationToken);
-    }
-
-    private static AdminUserDto Map(User user) => new(
-        user.Id,
-        user.Email,
-        user.FullName,
-        user.Role,
-        user.Status,
-        user.ApprovalStatus,
-        user.BannedReason,
-        user.ApprovedAt,
-        user.BannedAt);
+    private static AdminUserDto Map(User user) =>
+        new(user.Id, user.Email, user.FullName, user.Role, user.ModerationStatus, user.ModerationReason, user.ModeratedBy, user.ModeratedAtUtc);
 }

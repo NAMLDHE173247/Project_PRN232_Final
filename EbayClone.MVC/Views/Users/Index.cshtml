@@ -4,74 +4,25 @@
 <form method="get" class="panel mb-3 row g-2 align-items-end">
     <div class="col-sm-6 col-lg-3"><label class="form-label" for="search">Tìm kiếm</label><input class="form-control" id="search" name="search" value="@ViewBag.Search" placeholder="Tên hoặc email" /></div>
     <div class="col-sm-6 col-lg-2"><label class="form-label" for="role">Role</label><select class="form-select" id="role" name="role"><option value="">Tất cả</option>@foreach (var value in new[] { "Admin", "Seller", "User" }){<option value="@value" selected="@(ViewBag.Role == value)">@value</option>}</select></div>
-    <div class="col-sm-6 col-lg-2">
-        <label class="form-label" for="status">Trạng thái</label>
-        <select class="form-select" id="status" name="status">
-            <option value="">Tất cả</option>
-            @foreach (var value in new[] { "Pending", "Active", "Banned" })
-            {
-                <option value="@value" selected="@(ViewBag.Status == value)">@value</option>
-            }
-        </select>
-    </div>
-    <div class="col-sm-6 col-lg-2"><label class="form-label" for="sort">Sắp xếp</label><select class="form-select" id="sort" name="sort"><option value="id" selected="@(ViewBag.Sort == "id" || ViewBag.Sort == null)">ID</option><option value="name" selected="@(ViewBag.Sort == "name")">Tên</option><option value="email" selected="@(ViewBag.Sort == "email")">Email</option><option value="status" selected="@(ViewBag.Sort == "status")">Status</option></select></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="status">Status</label><select class="form-select" id="status" name="status"><option value="">Tất cả</option>@foreach (var value in new[] { "Pending", "Active", "Banned" }){<option value="@value" selected="@(ViewBag.Status == value)">@value</option>}</select></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="sort">Sắp xếp</label><select class="form-select" id="sort" name="sort"><option value="id" selected="@(ViewBag.Sort == "id" || ViewBag.Sort == null)">ID</option><option value="name" selected="@(ViewBag.Sort == "name")">Tên</option><option value="email" selected="@(ViewBag.Sort == "email")">Email</option></select></div>
     <div class="col-sm-6 col-lg-2"><label class="form-label" for="direction">Thứ tự</label><select class="form-select" id="direction" name="direction"><option value="asc" selected="@(ViewBag.Direction == "asc")">Tăng dần</option><option value="desc" selected="@(ViewBag.Direction == "desc")">Giảm dần</option></select></div>
     <div class="col-auto"><button class="btn btn-primary" type="submit">Lọc</button> <a class="btn btn-outline-secondary" asp-action="Index">Xóa lọc</a></div>
 </form>
 <div class="panel table-responsive">
     <table class="table align-middle">
-        <thead><tr><th><a asp-route-search="@ViewBag.Search" asp-route-role="@ViewBag.Role" asp-route-status="@ViewBag.Status" asp-route-sort="id" asp-route-direction="@(ViewBag.Sort == "id" && ViewBag.Direction == "asc" ? "desc" : "asc")">ID @(ViewBag.Sort == "id" ? (ViewBag.Direction == "desc" ? "↓" : "↑") : "")</a></th><th><a asp-route-search="@ViewBag.Search" asp-route-role="@ViewBag.Role" asp-route-status="@ViewBag.Status" asp-route-sort="name" asp-route-direction="@(ViewBag.Sort == "name" && ViewBag.Direction == "asc" ? "desc" : "asc")">Người dùng @(ViewBag.Sort == "name" ? (ViewBag.Direction == "desc" ? "↓" : "↑") : "")</a></th><th><a asp-route-search="@ViewBag.Search" asp-route-role="@ViewBag.Role" asp-route-status="@ViewBag.Status" asp-route-sort="role" asp-route-direction="@(ViewBag.Sort == "role" && ViewBag.Direction == "asc" ? "desc" : "asc")">Role</a></th><th><a asp-route-search="@ViewBag.Search" asp-route-role="@ViewBag.Role" asp-route-status="@ViewBag.Status" asp-route-sort="status" asp-route-direction="@(ViewBag.Sort == "status" && ViewBag.Direction == "asc" ? "desc" : "asc")">Status @(ViewBag.Sort == "status" ? (ViewBag.Direction == "desc" ? "↓" : "↑") : "")</a></th><th>Thao tác</th></tr></thead>
+        <thead><tr><th>ID</th><th>Người dùng</th><th>Role</th><th>Kiểm duyệt</th></tr></thead>
         <tbody>
         @foreach (var user in Model.Items)
         {
             <tr>
                 <td>@user.Id</td><td><strong>@user.FullName</strong><div class="text-muted small">@user.Email</div></td>
-                <td>@user.Role</td><td><span class="badge-status">@user.Status</span></td>
-                <td><div class="actions">
-                    @if (user.Status == "Pending")
-                    { <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#approve-user-@user.Id">Duyệt</button> }
-                    @if (user.Status == "Active")
-                    { <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#block-user-@user.Id">Khóa</button> }
-                    @if (user.Status == "Banned")
-                    { <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#unblock-user-@user.Id">Mở khóa</button> }
-                </div></td>
+                <td>@user.Role</td><td><strong>@user.ModerationStatus</strong><div class="small text-muted">@user.ModerationReason</div>@if(user.ModerationStatus=="Pending"){<form asp-action="Approve" method="post"><input type="hidden" name="id" value="@user.Id"/><button class="btn btn-sm btn-success">Approve</button></form>}else if(user.ModerationStatus=="Active" && user.Role!="Admin"){<form asp-action="Ban" method="post" class="d-flex gap-1"><input type="hidden" name="id" value="@user.Id"/><input class="form-control form-control-sm" name="reason" required minlength="3" maxlength="500" placeholder="Ban reason"/><button class="btn btn-sm btn-danger">Ban</button></form>}else if(user.ModerationStatus=="Banned"){<form asp-action="Unban" method="post"><input type="hidden" name="id" value="@user.Id"/><button class="btn btn-sm btn-outline-success">Unban</button></form>}</td>
             </tr>
         }
         </tbody>
     </table>
 </div>
-@foreach (var user in Model.Items)
-{
-    @if (user.Status == "Pending")
-    {
-        <div class="modal fade" id="approve-user-@user.Id" tabindex="-1" aria-labelledby="approve-user-label-@user.Id" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-                <div class="modal-header"><h2 class="modal-title fs-5" id="approve-user-label-@user.Id">Duyệt người dùng</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
-                <div class="modal-body">Bạn có chắc muốn duyệt tài khoản <strong>@user.Email</strong>?</div>
-                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><form asp-action="Approve" method="post"><input type="hidden" name="id" value="@user.Id" /><button type="submit" class="btn btn-success">Duyệt tài khoản</button></form></div>
-            </div></div>
-        </div>
-    }
-    @if (user.Status == "Active")
-    {
-        <div class="modal fade" id="block-user-@user.Id" tabindex="-1" aria-labelledby="block-user-label-@user.Id" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-                <div class="modal-header"><h2 class="modal-title fs-5" id="block-user-label-@user.Id">Khóa người dùng</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
-                <form asp-action="Block" method="post"><div class="modal-body"><p>Khóa tài khoản <strong>@user.Email</strong>?</p><label class="form-label" for="block-reason-@user.Id">Lý do</label><textarea class="form-control" id="block-reason-@user.Id" name="reason" required maxlength="500"></textarea></div><div class="modal-footer"><input type="hidden" name="id" value="@user.Id" /><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-danger">Xác nhận khóa</button></div></form>
-            </div></div>
-        </div>
-    }
-    @if (user.Status == "Banned")
-    {
-        <div class="modal fade" id="unblock-user-@user.Id" tabindex="-1" aria-labelledby="unblock-user-label-@user.Id" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-                <div class="modal-header"><h2 class="modal-title fs-5" id="unblock-user-label-@user.Id">Mở khóa người dùng</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
-                <div class="modal-body">Mở khóa tài khoản <strong>@user.Email</strong>?</div>
-                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><form asp-action="Unblock" method="post"><input type="hidden" name="id" value="@user.Id" /><button type="submit" class="btn btn-success">Mở khóa</button></form></div>
-            </div></div>
-        </div>
-    }
-}
 <div class="mt-3 d-flex justify-content-between align-items-center">
     <span class="text-muted">Trang @Model.Page / @Model.TotalPages · @Model.Total bản ghi</span>
     <div class="btn-group"><a class="btn btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")" asp-route-page="@(Model.Page - 1)" asp-route-search="@ViewBag.Search" asp-route-role="@ViewBag.Role" asp-route-status="@ViewBag.Status" asp-route-sort="@ViewBag.Sort" asp-route-direction="@ViewBag.Direction">Trước</a><a class="btn btn-outline-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" asp-route-page="@(Model.Page + 1)" asp-route-search="@ViewBag.Search" asp-route-role="@ViewBag.Role" asp-route-status="@ViewBag.Status" asp-route-sort="@ViewBag.Sort" asp-route-direction="@ViewBag.Direction">Sau</a></div>

@@ -1,5 +1,3 @@
-using EbayClone.API.Models;
-
 namespace EbayClone.API.DTOs.Users;
 
 public record AdminUserDto(
@@ -7,8 +5,7 @@ public record AdminUserDto(
     string Email,
     string FullName,
     string Role,
-    UserStatus Status,
-    string ApprovalStatus,
-    string? BannedReason,
-    DateTime? ApprovedAt,
-    DateTime? BannedAt);
+    string ModerationStatus,
+    string? ModerationReason,
+    int? ModeratedBy,
+    DateTime? ModeratedAtUtc);

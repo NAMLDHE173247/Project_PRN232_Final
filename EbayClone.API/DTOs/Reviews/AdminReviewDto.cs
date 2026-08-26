@@ -1,5 +1,3 @@
-using EbayClone.API.Models;
-
 namespace EbayClone.API.DTOs.Reviews;
 
 public record AdminReviewDto(
@@ -9,4 +7,7 @@ public record AdminReviewDto(
     int? Rating,
     string? Comment,
     DateTime? CreatedAt,
-    ReviewStatus Status);
+    string ModerationStatus,
+    string? ModerationReason,
+    int? ModeratedBy,
+    DateTime? ModeratedAtUtc);

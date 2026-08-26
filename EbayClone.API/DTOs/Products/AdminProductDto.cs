@@ -1,5 +1,3 @@
-using EbayClone.API.Models;
-
 namespace EbayClone.API.DTOs.Products;
 
 public record AdminProductDto(
@@ -7,4 +5,7 @@ public record AdminProductDto(
     string Name,
     decimal Price,
     int SellerId,
-    ProductStatus Status);
+    string ModerationStatus,
+    string? ModerationReason,
+    int? ModeratedBy,
+    DateTime? ModeratedAtUtc);

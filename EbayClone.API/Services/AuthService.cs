@@ -14,12 +14,12 @@ public class AuthService(IUserRepository userRepository, JwtHelper jwtHelper) : 
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await userRepository.GetByEmailAsync(email, cancellationToken);
 
-        if (user is null || user.Status != UserStatus.Active)
+        if (user is null)
         {
             return null;
         }
 
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user.ModerationStatus != "Active" || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             return null;
         }

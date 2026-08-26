@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EbayClone.MVC.Controllers;
 
 [AdminSession]
-public class ProductsController(AdminApiClient apiClient, AdminNotificationService notifications) : AdminMvcController
+public class ProductsController(AdminApiClient apiClient) : AdminMvcController
 {
     public async Task<IActionResult> Index(string? search, int? sellerId, string? status, string? sort, string? direction, int page = 1, CancellationToken cancellationToken = default)
     {
@@ -25,23 +25,16 @@ public class ProductsController(AdminApiClient apiClient, AdminNotificationServi
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> Hide(int id, CancellationToken cancellationToken) => RunAction(id, "hide", cancellationToken);
+    public Task<IActionResult> Hide(int id, string reason, CancellationToken cancellationToken) => RunAction(id, "hide", new { reason }, cancellationToken);
 
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> Unhide(int id, CancellationToken cancellationToken) => RunAction(id, "unhide", cancellationToken);
+    public Task<IActionResult> Restore(int id, CancellationToken cancellationToken) => RunAction(id, "restore", null, cancellationToken);
 
-    private async Task<IActionResult> RunAction(int id, string action, CancellationToken cancellationToken)
+    private async Task<IActionResult> RunAction(int id, string action, object? body, CancellationToken cancellationToken)
     {
-        try
-        {
-            await apiClient.PutAsync<AdminProductViewModel>($"api/admin/products/{id}/{action}", null, cancellationToken);
-            TempData["Success"] = "Cập nhật sản phẩm thành công.";
-            await notifications.BroadcastAsync("Danh sách sản phẩm đã được cập nhật.", cancellationToken: cancellationToken);
-            return RedirectToAction(nameof(Index));
-        }
-        catch (AdminApiException exception)
-        {
-            return HandleApiFailure(exception);
-        }
+        try { await apiClient.PutAsync<AdminProductViewModel>($"api/admin/products/{id}/{action}", body, cancellationToken); TempData["Success"] = $"Product #{id}: {action}."; }
+        catch (AdminApiException exception) { return HandleApiFailure(exception); }
+        return RedirectToAction(nameof(Index));
     }
+
 }

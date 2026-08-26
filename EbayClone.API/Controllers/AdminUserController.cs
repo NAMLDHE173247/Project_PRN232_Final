@@ -1,9 +1,10 @@
-using System.Security.Claims;
 using EbayClone.API.DTOs.Users;
-using EbayClone.API.Models;
+using EbayClone.API.DTOs.Moderation;
+using System.Security.Claims;
 using EbayClone.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EbayClone.API.Controllers;
 
@@ -16,7 +17,7 @@ public class AdminUserController(IAdminUserService userService) : ControllerBase
     public Task<PagedResultDto<AdminUserDto>> GetUsers(
         [FromQuery] string? search,
         [FromQuery] string? role,
-        [FromQuery] UserStatus? status,
+        [FromQuery] string? status,
         [FromQuery] string? sort,
         [FromQuery] string? direction,
         [FromQuery] int page = 1,
@@ -26,6 +27,27 @@ public class AdminUserController(IAdminUserService userService) : ControllerBase
         return userService.GetUsersAsync(search, role, status, sort, direction, page, pageSize, cancellationToken);
     }
 
+    [HttpPut("{id:int}/approve")]
+    public Task<ActionResult<AdminUserDto>> Approve(int id, CancellationToken cancellationToken) =>
+        ExecuteTransition(() => userService.ApproveAsync(id, GetAdminId(), cancellationToken));
+
+    [HttpPut("{id:int}/ban")]
+    public Task<ActionResult<AdminUserDto>> Ban(int id, ModerationReasonRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteTransition(() => userService.BanAsync(id, GetAdminId(), request.Reason, cancellationToken));
+
+    [HttpPut("{id:int}/unban")]
+    public Task<ActionResult<AdminUserDto>> Unban(int id, CancellationToken cancellationToken) =>
+        ExecuteTransition(() => userService.UnbanAsync(id, GetAdminId(), cancellationToken));
+
+    private static async Task<ActionResult<AdminUserDto>> ExecuteTransition(Func<Task<AdminUserDto?>> transition)
+    {
+        try { var user = await transition(); return user is null ? new NotFoundResult() : new OkObjectResult(user); }
+        catch (InvalidOperationException exception) { return new ConflictObjectResult(new { message = exception.Message }); }
+        catch (DbUpdateConcurrencyException) { return new ConflictObjectResult(new { message = "The user state changed before this action completed." }); }
+    }
+
+    private int GetAdminId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<AdminUserDto>> GetById(int id, CancellationToken cancellationToken)
     {
@@ -33,49 +55,4 @@ public class AdminUserController(IAdminUserService userService) : ControllerBase
         return user is null ? NotFound() : Ok(user);
     }
 
-    [HttpPut("{id:int}/approve")]
-    public Task<ActionResult<AdminUserDto>> Approve(int id, CancellationToken cancellationToken)
-    {
-        return ExecuteTransition(
-            () => userService.ApproveAsync(id, GetAdminId(), cancellationToken));
-    }
-
-    [HttpPut("{id:int}/block")]
-    public Task<ActionResult<AdminUserDto>> Block(
-        int id,
-        BlockUserRequestDto request,
-        CancellationToken cancellationToken)
-    {
-        return ExecuteTransition(
-            () => userService.BlockAsync(id, GetAdminId(), request.Reason, cancellationToken));
-    }
-
-    [HttpPut("{id:int}/unblock")]
-    public Task<ActionResult<AdminUserDto>> Unblock(int id, CancellationToken cancellationToken)
-    {
-        return ExecuteTransition(
-            () => userService.UnblockAsync(id, GetAdminId(), cancellationToken));
-    }
-
-    private static async Task<ActionResult<AdminUserDto>> ExecuteTransition(
-        Func<Task<AdminUserDto?>> transition)
-    {
-        try
-        {
-            var user = await transition();
-            return user is null ? new NotFoundResult() : new OkObjectResult(user);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return new BadRequestObjectResult(new { message = exception.Message });
-        }
-    }
-
-    private int GetAdminId()
-    {
-        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(value, out var adminId)
-            ? adminId
-            : throw new InvalidOperationException("Authenticated user id is missing.");
-    }
 }
