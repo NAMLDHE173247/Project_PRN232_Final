@@ -18,12 +18,10 @@ public partial class Dispute
     public string? Resolution { get; set; }
 
     public int? AssignedTo { get; set; }
-
-    public DateTime? AssignedAt { get; set; }
-
+    public DateTime? AssignedAtUtc { get; set; }
+    public DateTime? ReviewStartedAtUtc { get; set; }
     public int? ResolvedBy { get; set; }
-
-    public DateTime? ResolvedAt { get; set; }
+    public DateTime? ResolvedAtUtc { get; set; }
 
     public virtual OrderTable? Order { get; set; }
 

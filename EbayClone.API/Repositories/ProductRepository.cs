@@ -9,7 +9,7 @@ public class ProductRepository(AppDbContext dbContext) : IProductRepository
     public async Task<(int Total, IReadOnlyList<Product> Items)> GetPageAsync(
         string? search,
         int? sellerId,
-        ProductStatus? status,
+        string? status,
         string? sort,
         string? direction,
         int page,
@@ -21,8 +21,8 @@ public class ProductRepository(AppDbContext dbContext) : IProductRepository
             query = query.Where(product => product.Name.Contains(search.Trim()));
         if (sellerId.HasValue)
             query = query.Where(product => product.SellerId == sellerId.Value);
-        if (status.HasValue)
-            query = query.Where(product => product.Status == status.Value);
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(product => product.ModerationStatus == status.Trim());
 
         var descending = string.Equals(direction, "desc", StringComparison.OrdinalIgnoreCase);
         var orderedQuery = (sort?.Trim().ToLowerInvariant()) switch
@@ -30,7 +30,6 @@ public class ProductRepository(AppDbContext dbContext) : IProductRepository
             "name" => descending ? query.OrderByDescending(product => product.Name).ThenByDescending(product => product.Id) : query.OrderBy(product => product.Name).ThenBy(product => product.Id),
             "price" => descending ? query.OrderByDescending(product => product.Price).ThenByDescending(product => product.Id) : query.OrderBy(product => product.Price).ThenBy(product => product.Id),
             "seller" => descending ? query.OrderByDescending(product => product.SellerId).ThenByDescending(product => product.Id) : query.OrderBy(product => product.SellerId).ThenBy(product => product.Id),
-            "status" => descending ? query.OrderByDescending(product => product.Status).ThenByDescending(product => product.Id) : query.OrderBy(product => product.Status).ThenBy(product => product.Id),
             _ => descending ? query.OrderByDescending(product => product.Id) : query.OrderBy(product => product.Id)
         };
 

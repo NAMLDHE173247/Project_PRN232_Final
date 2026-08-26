@@ -35,7 +35,7 @@ public class DisputeRepository(AppDbContext dbContext) : IDisputeRepository
         dbContext.Disputes.FirstOrDefaultAsync(dispute => dispute.Id == id, cancellationToken);
 
     public Task<bool> IsAdminAsync(int userId, CancellationToken cancellationToken = default) =>
-        dbContext.Users.AnyAsync(user => user.Id == userId && user.Role == "Admin", cancellationToken);
+        dbContext.Users.AnyAsync(user => user.Id == userId && user.Role == "Admin" && user.ModerationStatus == "Active", cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
@@ -47,9 +47,9 @@ public class DisputeRepository(AppDbContext dbContext) : IDisputeRepository
             join raiser in dbContext.Users.AsNoTracking()
                 on dispute.RaisedBy equals (int?)raiser.Id into raisers
             from raiser in raisers.DefaultIfEmpty()
-            join admin in dbContext.Users.AsNoTracking()
-                on dispute.AssignedTo equals (int?)admin.Id into admins
-            from admin in admins.DefaultIfEmpty()
+            join assignee in dbContext.Users.AsNoTracking()
+                on dispute.AssignedTo equals (int?)assignee.Id into assignees
+            from assignee in assignees.DefaultIfEmpty()
             select new DisputeDto(
                 dispute.Id,
                 dispute.OrderId,
@@ -59,9 +59,10 @@ public class DisputeRepository(AppDbContext dbContext) : IDisputeRepository
                 dispute.Status,
                 dispute.Resolution,
                 dispute.AssignedTo,
-                admin == null ? null : admin.FullName,
-                dispute.AssignedAt,
+                assignee == null ? null : assignee.FullName,
+                dispute.AssignedAtUtc,
+                dispute.ReviewStartedAtUtc,
                 dispute.ResolvedBy,
-                dispute.ResolvedAt);
+                dispute.ResolvedAtUtc);
     }
 }

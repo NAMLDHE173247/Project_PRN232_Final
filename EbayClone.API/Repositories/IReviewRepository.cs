@@ -5,7 +5,6 @@ namespace EbayClone.API.Repositories;
 public interface IReviewRepository
 {
     Task<(int Total, IReadOnlyList<Review> Items)> GetPageAsync(
-        ReviewStatus? status,
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);

@@ -16,7 +16,7 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     public async Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(
         string? search,
         string? role,
-        UserStatus? status,
+        string? status,
         string? sort,
         string? direction,
         int page,
@@ -31,15 +31,14 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         }
         if (!string.IsNullOrWhiteSpace(role))
             query = query.Where(user => user.Role == role.Trim());
-        if (status.HasValue)
-            query = query.Where(user => user.Status == status.Value);
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(user => user.ModerationStatus == status.Trim());
 
         var descending = string.Equals(direction, "desc", StringComparison.OrdinalIgnoreCase);
         var orderedQuery = (sort?.Trim().ToLowerInvariant()) switch
         {
             "name" => descending ? query.OrderByDescending(user => user.FullName).ThenByDescending(user => user.Id) : query.OrderBy(user => user.FullName).ThenBy(user => user.Id),
             "email" => descending ? query.OrderByDescending(user => user.Email).ThenByDescending(user => user.Id) : query.OrderBy(user => user.Email).ThenBy(user => user.Id),
-            "status" => descending ? query.OrderByDescending(user => user.Status).ThenByDescending(user => user.Id) : query.OrderBy(user => user.Status).ThenBy(user => user.Id),
             _ => descending ? query.OrderByDescending(user => user.Id) : query.OrderBy(user => user.Id)
         };
 

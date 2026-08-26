@@ -8,7 +8,7 @@ public interface IUserRepository
     Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(
         string? search,
         string? role,
-        UserStatus? status,
+        string? status,
         string? sort,
         string? direction,
         int page,

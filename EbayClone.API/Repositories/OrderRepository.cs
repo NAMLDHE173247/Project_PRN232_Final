@@ -97,6 +97,7 @@ public class OrderRepository(AppDbContext dbContext) : IOrderRepository
             .OrderBy(payment => payment.Id)
             .Select(payment => new OrderPaymentAdminDto(
                 payment.Amount ?? 0m,
+                payment.Method,
                 payment.Status,
                 payment.PaidAt))
             .ToListAsync(cancellationToken);

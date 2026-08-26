@@ -6,8 +6,8 @@ public interface IDashboardRepository
     Task<int> CountProductsAsync(CancellationToken cancellationToken = default);
     Task<int> CountOrdersAsync(CancellationToken cancellationToken = default);
     Task<decimal> SumRevenueAsync(CancellationToken cancellationToken = default);
-    Task<int> CountActiveUsersAsync(CancellationToken cancellationToken = default);
-    Task<int> CountBannedUsersAsync(CancellationToken cancellationToken = default);
-    Task<int> CountHiddenProductsAsync(CancellationToken cancellationToken = default);
     Task<int> CountPendingDisputesAsync(CancellationToken cancellationToken = default);
+    Task<int> CountPendingUsersAsync(CancellationToken cancellationToken = default);
+    Task<int> CountHiddenProductsAsync(CancellationToken cancellationToken = default);
+    Task<int> CountHiddenReviewsAsync(CancellationToken cancellationToken = default);
 }

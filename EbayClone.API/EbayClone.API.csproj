@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Remove="Data\ApplicationDbContext.cs" />
+    <Compile Remove="Data\Migrations\**\*.cs" />
     <PackageReference Include="AutoMapper" Version="16.2.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />

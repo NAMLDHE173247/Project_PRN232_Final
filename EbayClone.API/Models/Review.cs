@@ -17,7 +17,10 @@ public partial class Review
 
     public DateTime? CreatedAt { get; set; }
 
-    public ReviewStatus Status { get; set; } = ReviewStatus.Visible;
+    public string ModerationStatus { get; set; } = "Visible";
+    public string? ModerationReason { get; set; }
+    public int? ModeratedBy { get; set; }
+    public DateTime? ModeratedAtUtc { get; set; }
 
     public virtual Product? Product { get; set; }
 

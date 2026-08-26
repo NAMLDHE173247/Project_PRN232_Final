@@ -20,15 +20,10 @@ public class DashboardRepository(AppDbContext dbContext) : IDashboardRepository
             .Where(payment => payment.Status == "Paid")
             .SumAsync(payment => (decimal?)payment.Amount, cancellationToken) ?? 0m;
 
-    public Task<int> CountActiveUsersAsync(CancellationToken cancellationToken = default) =>
-        dbContext.Users.CountAsync(user => user.Status == UserStatus.Active, cancellationToken);
-
-    public Task<int> CountBannedUsersAsync(CancellationToken cancellationToken = default) =>
-        dbContext.Users.CountAsync(user => user.Status == UserStatus.Banned, cancellationToken);
-
-    public Task<int> CountHiddenProductsAsync(CancellationToken cancellationToken = default) =>
-        dbContext.Products.CountAsync(product => product.Status == ProductStatus.Hidden, cancellationToken);
-
     public Task<int> CountPendingDisputesAsync(CancellationToken cancellationToken = default) =>
         dbContext.Disputes.CountAsync(dispute => dispute.Status == nameof(DisputeStatus.Open), cancellationToken);
+
+    public Task<int> CountPendingUsersAsync(CancellationToken cancellationToken = default) => dbContext.Users.CountAsync(x => x.ModerationStatus == "Pending", cancellationToken);
+    public Task<int> CountHiddenProductsAsync(CancellationToken cancellationToken = default) => dbContext.Products.CountAsync(x => x.ModerationStatus == "Hidden", cancellationToken);
+    public Task<int> CountHiddenReviewsAsync(CancellationToken cancellationToken = default) => dbContext.Reviews.CountAsync(x => x.ModerationStatus == "Hidden", cancellationToken);
 }

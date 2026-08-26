@@ -7,7 +7,7 @@ public interface IProductRepository
     Task<(int Total, IReadOnlyList<Product> Items)> GetPageAsync(
         string? search,
         int? sellerId,
-        ProductStatus? status,
+        string? status,
         string? sort,
         string? direction,
         int page,
