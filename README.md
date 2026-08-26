@@ -109,6 +109,26 @@ The marketplace demo accounts use the password `Demo@123`; they have the regular
 
 For Docker, set `ADMIN_PASSWORD` in `.env`; do not commit real credentials.
 
+## Local demo data
+
+Run `database/seed_demo_data.sql` against `CloneEbayDB`. The script is transactional and idempotent. Optional cleanup: `database/reset_demo_data.sql` deletes only records identified by the documented demo emails/names.
+
+All local demo accounts use password `Demo@123` stored as a BCrypt hash:
+
+| Role | Email | Status |
+| --- | --- | --- |
+| Admin | `admin.demo@gmail.com` | Active |
+| Buyer A | `buyer1.demo@gmail.com` | Active |
+| Buyer B | `buyer2.demo@gmail.com` | Active |
+| Seller A | `seller1.demo@gmail.com` | Active |
+| Seller B | `seller2.demo@gmail.com` | Active |
+| Pending User | `pending.demo@gmail.com` | Pending, không đăng nhập được |
+| Banned User | `banned.demo@gmail.com` | Banned, không đăng nhập được |
+
+Các địa chỉ `@gmail.com` trên chỉ là tài khoản mock phục vụ demo, không phải hộp thư thật và hệ thống không gửi email tới chúng.
+
+These credentials are local demonstration data, not deployment secrets.
+
 ## CI
 
 GitHub Actions runs restore, build, test and Docker image builds on pushes and pull requests to `main` or `master`.
