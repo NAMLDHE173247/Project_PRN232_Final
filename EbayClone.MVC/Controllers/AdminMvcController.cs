@@ -13,10 +13,16 @@ public abstract class AdminMvcController : Controller
             return RedirectToAction("Login", "Account");
         }
 
-        if (exception.StatusCode == 503)
+        if (exception.StatusCode is 502 or 503 or 504)
             return RedirectToAction("Offline", "Dashboard");
 
-        TempData["Error"] = "API không xử lý được yêu cầu. Vui lòng thử lại.";
+        TempData["Error"] = exception.StatusCode switch
+        {
+            400 => "Dữ liệu nhập không hợp lệ. Vui lòng kiểm tra lại.",
+            404 => "Không tìm thấy dữ liệu được yêu cầu.",
+            409 => "Dữ liệu đã thay đổi hoặc thao tác không còn hợp lệ.",
+            _ => "API không xử lý được yêu cầu. Vui lòng thử lại."
+        };
         return RedirectToAction(action);
     }
 }

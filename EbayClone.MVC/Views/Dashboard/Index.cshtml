@@ -16,12 +16,12 @@
 </section>
 
 <section class="dashboard-section" aria-labelledby="dashboard-monitoring-metrics">
-    <h2 id="dashboard-monitoring-metrics" class="dashboard-section-title">Theo dõi cần chú ý</h2>
+    <h2 id="dashboard-monitoring-metrics" class="dashboard-section-title">Cần xử lý</h2>
     <div class="row g-3 dashboard-grid">
-        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">User Active</div><div class="stat-value">@Model.ActiveUsers</div></div></div>
-        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">User Banned</div><div class="stat-value">@Model.BannedUsers</div></div></div>
-        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Product Hidden</div><div class="stat-value">@Model.HiddenProducts</div></div></div>
-        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Dispute Open</div><div class="stat-value">@Model.PendingDisputes</div></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Dispute Open</div><div class="stat-value">@Model.PendingDisputes</div><a asp-controller="Disputes" asp-action="Index" asp-route-status="Open">Xem khiếu nại</a></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">User Pending</div><div class="stat-value">@Model.PendingUsers</div><a asp-controller="Users" asp-action="Index" asp-route-status="Pending">Xem người dùng</a></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Product Hidden</div><div class="stat-value">@Model.HiddenProducts</div><a asp-controller="Products" asp-action="Index" asp-route-status="Hidden">Xem sản phẩm</a></div></div>
+        <div class="col-12 col-md-6 col-xl-3"><div class="stat-card dashboard-card"><div class="stat-label">Review Hidden</div><div class="stat-value">@Model.HiddenReviews</div><a asp-controller="Reviews" asp-action="Index">Xem reviews</a></div></div>
     </div>
 </section>
 
@@ -39,28 +39,4 @@
             }
         </div>
     </section>
-}
-
-<section class="dashboard-section" aria-labelledby="dashboard-charts-title">
-    <h2 id="dashboard-charts-title" class="dashboard-section-title">Biểu đồ tổng quan</h2>
-    <div class="row g-3 dashboard-charts">
-        <div class="col-12 col-xl-6">
-            <div class="panel chart-card">
-                <h3 class="chart-title">Trạng thái người dùng</h3>
-                <div class="chart-canvas-wrapper"><canvas id="user-status-chart" data-labels='["Active","Banned"]' data-values='[@Model.ActiveUsers,@Model.BannedUsers]' aria-label="Biểu đồ trạng thái người dùng"></canvas></div>
-            </div>
-        </div>
-        <div class="col-12 col-xl-6">
-            <div class="panel chart-card">
-                <h3 class="chart-title">Trạng thái sản phẩm</h3>
-                <div class="chart-canvas-wrapper"><canvas id="product-status-chart" data-labels='["Active","Hidden"]' data-values='[@(Model.TotalProducts - Model.HiddenProducts),@Model.HiddenProducts]' aria-label="Biểu đồ trạng thái sản phẩm"></canvas></div>
-            </div>
-        </div>
-    </div>
-</section>
-</div>
-
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@@4.4.7/dist/chart.umd.min.js"></script>
-    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
 }

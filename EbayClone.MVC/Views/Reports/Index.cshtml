@@ -20,9 +20,6 @@
 </div>
 
 <div class="row g-3">
-    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Người dùng theo trạng thái", Model.UserStatuses, false))" />
-    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Sản phẩm theo trạng thái", Model.ProductStatuses, false))" />
     <partial name="_Breakdown" model="@(new ReportSectionViewModel("Đơn hàng theo trạng thái", Model.OrderStatuses, true))" />
     <partial name="_Breakdown" model="@(new ReportSectionViewModel("Khiếu nại theo trạng thái", Model.DisputeStatuses, false))" />
-    <partial name="_Breakdown" model="@(new ReportSectionViewModel("Top thao tác Audit", Model.AuditActions, false))" />
 </div>

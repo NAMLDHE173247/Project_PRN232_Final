@@ -58,7 +58,8 @@ public class CoreApiClient(
         {
             using var response = await SendWithErrorHandlingAsync(request, cancellationToken);
             var result = await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancellationToken);
-            apiCache.Set(GetCacheKey(path), result, TimeSpan.FromMinutes(30));
+            if (method == HttpMethod.Get && authorize)
+                apiCache.Set(GetCacheKey(path), result, TimeSpan.FromMinutes(30));
             MarkOnline();
             return result;
         }
@@ -68,7 +69,7 @@ public class CoreApiClient(
             if (method == HttpMethod.Get && authorize && apiCache.TryGet(GetCacheKey(path), out T? cached)) return cached;
             throw new AdminApiException(503, "Không thể kết nối Admin API.", exception);
         }
-        catch (AdminApiException exception) when (exception.StatusCode == 503)
+        catch (AdminApiException exception) when (exception.StatusCode is 502 or 503 or 504)
         {
             MarkOffline();
             if (method == HttpMethod.Get && authorize && apiCache.TryGet(GetCacheKey(path), out T? cached)) return cached;

@@ -28,22 +28,6 @@ public sealed class AdminReportService(AppDbContext dbContext)
             .ToList();
         var paidRevenue = await payments.SumAsync(payment => (decimal?)payment.Amount, cancellationToken) ?? 0m;
 
-        var userRows = await dbContext.Users.AsNoTracking()
-            .Select(user => user.Status)
-            .ToListAsync(cancellationToken);
-        var userStatuses = userRows
-            .GroupBy(status => status.ToString())
-            .Select(group => new ReportBreakdownDto(group.Key, group.Count(), 0m))
-            .OrderByDescending(item => item.Count)
-            .ToList();
-        var productRows = await dbContext.Products.AsNoTracking()
-            .Select(product => product.Status)
-            .ToListAsync(cancellationToken);
-        var productStatuses = productRows
-            .GroupBy(status => status.ToString())
-            .Select(group => new ReportBreakdownDto(group.Key, group.Count(), 0m))
-            .OrderByDescending(item => item.Count)
-            .ToList();
         var disputeRows = await dbContext.Disputes.AsNoTracking()
             .Select(dispute => dispute.Status)
             .ToListAsync(cancellationToken);
@@ -52,16 +36,6 @@ public sealed class AdminReportService(AppDbContext dbContext)
             .Select(group => new ReportBreakdownDto(group.Key, group.Count(), 0m))
             .OrderByDescending(item => item.Count)
             .ToList();
-        var auditRows = await dbContext.AuditLogs.AsNoTracking()
-            .Select(log => log.Action)
-            .ToListAsync(cancellationToken);
-        var auditActions = auditRows
-            .GroupBy(action => action)
-            .Select(group => new ReportBreakdownDto(group.Key, group.Count(), 0m))
-            .OrderByDescending(item => item.Count)
-            .Take(10)
-            .ToList();
-
         return new AdminReportDto(
             from,
             to,
@@ -70,10 +44,7 @@ public sealed class AdminReportService(AppDbContext dbContext)
             await dbContext.Products.CountAsync(cancellationToken),
             await orders.CountAsync(cancellationToken),
             paidRevenue,
-            userStatuses,
-            productStatuses,
             orderStatuses,
-            disputeStatuses,
-            auditActions);
+            disputeStatuses);
     }
 }

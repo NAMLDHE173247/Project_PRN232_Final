@@ -11,7 +11,7 @@ namespace EbayClone.API.Controllers;
 public class AdminOrderController(IAdminOrderService orderService) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedOrderResultDto> GetOrders(
+    public async Task<ActionResult<PagedOrderResultDto>> GetOrders(
         [FromQuery] string? status,
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
@@ -20,8 +20,12 @@ public class AdminOrderController(IAdminOrderService orderService) : ControllerB
         [FromQuery] string? direction,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        CancellationToken cancellationToken = default) =>
-        orderService.GetOrdersAsync(status, from, to, buyerId, sort, direction, page, pageSize, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        if (from.HasValue && to.HasValue && from.Value.Date > to.Value.Date)
+            return BadRequest(new { message = "From date cannot be after To date." });
+        return Ok(await orderService.GetOrdersAsync(status, from, to, buyerId, sort, direction, page, pageSize, cancellationToken));
+    }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDetailAdminDto>> GetDetail(int id, CancellationToken cancellationToken)

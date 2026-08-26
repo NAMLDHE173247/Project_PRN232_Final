@@ -11,10 +11,10 @@ public class AdminDashboardService(IDashboardRepository dashboardRepository) : I
         var totalProducts = await dashboardRepository.CountProductsAsync(cancellationToken);
         var totalOrders = await dashboardRepository.CountOrdersAsync(cancellationToken);
         var revenue = await dashboardRepository.SumRevenueAsync(cancellationToken);
-        var activeUsers = await dashboardRepository.CountActiveUsersAsync(cancellationToken);
-        var bannedUsers = await dashboardRepository.CountBannedUsersAsync(cancellationToken);
-        var hiddenProducts = await dashboardRepository.CountHiddenProductsAsync(cancellationToken);
         var pendingDisputes = await dashboardRepository.CountPendingDisputesAsync(cancellationToken);
+        var pendingUsers = await dashboardRepository.CountPendingUsersAsync(cancellationToken);
+        var hiddenProducts = await dashboardRepository.CountHiddenProductsAsync(cancellationToken);
+        var hiddenReviews = await dashboardRepository.CountHiddenReviewsAsync(cancellationToken);
 
         var alerts = new List<DashboardAlertDto>();
         if (pendingDisputes > 0)
@@ -25,10 +25,10 @@ public class AdminDashboardService(IDashboardRepository dashboardRepository) : I
             totalProducts,
             totalOrders,
             revenue,
-            activeUsers,
-            bannedUsers,
-            hiddenProducts,
             pendingDisputes,
+            pendingUsers,
+            hiddenProducts,
+            hiddenReviews,
             alerts);
     }
 }

@@ -21,6 +21,7 @@ public record OrderItemAdminDto(
 
 public record OrderPaymentAdminDto(
     decimal Amount,
+    string? Method,
     string? Status,
     DateTime? PaidAt);
 

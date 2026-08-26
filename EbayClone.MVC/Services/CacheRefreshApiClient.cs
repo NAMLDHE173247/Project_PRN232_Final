@@ -31,8 +31,9 @@ public sealed class CacheRefreshApiClient(
         await RefreshAsync<PagedViewModel<AdminProductViewModel>>("api/admin/products?page=1&pageSize=20", login.Token, cancellationToken);
         await RefreshAsync<PagedViewModel<OrderViewModel>>("api/admin/orders?page=1&pageSize=20", login.Token, cancellationToken);
         await RefreshAsync<PagedViewModel<DisputeViewModel>>("api/admin/disputes?page=1&pageSize=20", login.Token, cancellationToken);
+        await RefreshAsync<PagedViewModel<ReturnRequestViewModel>>("api/admin/return-requests?page=1&pageSize=20", login.Token, cancellationToken);
+        await RefreshAsync<PagedViewModel<AdminReviewViewModel>>("api/admin/reviews?page=1&pageSize=20", login.Token, cancellationToken);
         await RefreshAsync<PagedViewModel<AdminFeedbackViewModel>>("api/admin/feedbacks?page=1&pageSize=20", login.Token, cancellationToken);
-        await RefreshAsync<PagedViewModel<AuditLogViewModel>>("api/admin/audit-logs?page=1&pageSize=20", login.Token, cancellationToken);
     }
 
     private async Task RefreshAsync<T>(string path, string token, CancellationToken cancellationToken)

@@ -5,10 +5,10 @@ public record DashboardDto(
     int TotalProducts,
     int TotalOrders,
     decimal Revenue,
-    int ActiveUsers,
-    int BannedUsers,
-    int HiddenProducts,
     int PendingDisputes,
+    int PendingUsers,
+    int HiddenProducts,
+    int HiddenReviews,
     IReadOnlyList<DashboardAlertDto> Alerts);
 
 public record DashboardAlertDto(
