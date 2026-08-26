@@ -18,10 +18,10 @@ public record DashboardViewModel(
     int TotalProducts,
     int TotalOrders,
     decimal Revenue,
-    int ActiveUsers,
-    int BannedUsers,
-    int HiddenProducts,
     int PendingDisputes,
+    int PendingUsers,
+    int HiddenProducts,
+    int HiddenReviews,
     IReadOnlyList<DashboardAlertViewModel> Alerts);
 
 public record DashboardAlertViewModel(string Severity, string Title, string Message, string Controller, string Action);
@@ -34,11 +34,8 @@ public record AdminReportViewModel(
     int TotalProducts,
     int TotalOrders,
     decimal PaidRevenue,
-    IReadOnlyList<ReportBreakdownViewModel> UserStatuses,
-    IReadOnlyList<ReportBreakdownViewModel> ProductStatuses,
     IReadOnlyList<ReportBreakdownViewModel> OrderStatuses,
-    IReadOnlyList<ReportBreakdownViewModel> DisputeStatuses,
-    IReadOnlyList<ReportBreakdownViewModel> AuditActions);
+    IReadOnlyList<ReportBreakdownViewModel> DisputeStatuses);
 
 public record ReportBreakdownViewModel(string Label, int Count, decimal Amount);
 
@@ -52,13 +49,12 @@ public record AdminUserViewModel(
     string Email,
     string FullName,
     string Role,
-    string Status,
-    string ApprovalStatus,
-    string? BannedReason,
-    DateTime? ApprovedAt,
-    DateTime? BannedAt);
+    string ModerationStatus,
+    string? ModerationReason,
+    int? ModeratedBy,
+    DateTime? ModeratedAtUtc);
 
-public record AdminProductViewModel(int Id, string Name, decimal Price, int SellerId, string Status);
+public record AdminProductViewModel(int Id, string Name, decimal Price, int SellerId, string ModerationStatus, string? ModerationReason, int? ModeratedBy, DateTime? ModeratedAtUtc);
 
 public record AdminFeedbackViewModel(
     int Id,
@@ -66,6 +62,18 @@ public record AdminFeedbackViewModel(
     decimal? AverageRating,
     int? TotalReviews,
     decimal? PositiveRate);
+
+public record AdminReviewViewModel(
+    int Id,
+    int? ProductId,
+    int? ReviewerId,
+    int? Rating,
+    string? Comment,
+    DateTime? CreatedAt,
+    string ModerationStatus,
+    string? ModerationReason,
+    int? ModeratedBy,
+    DateTime? ModeratedAtUtc);
 
 public record OrderViewModel(
     int OrderId,
@@ -88,7 +96,7 @@ public record OrderDetailViewModel(
     IReadOnlyList<OrderShippingViewModel> Shipping);
 
 public record OrderItemViewModel(int Id, int? ProductId, string? ProductName, int Quantity, decimal UnitPrice);
-public record OrderPaymentViewModel(decimal Amount, string? Status, DateTime? PaidAt);
+public record OrderPaymentViewModel(decimal Amount, string? Method, string? Status, DateTime? PaidAt);
 public record OrderShippingViewModel(string? Carrier, string? TrackingNumber, string? Status, DateTime? EstimatedArrival);
 
 public record DisputeViewModel(
@@ -100,16 +108,28 @@ public record DisputeViewModel(
     string? Status,
     string? Resolution,
     int? AssignedTo,
-    string? AssignedAdminName,
-    DateTime? AssignedAt,
+    string? AssignedToName,
+    DateTime? AssignedAtUtc,
+    DateTime? ReviewStartedAtUtc,
     int? ResolvedBy,
-    DateTime? ResolvedAt);
+    DateTime? ResolvedAtUtc);
 
-public record AuditLogViewModel(
-    long Id,
-    int? ActorId,
-    string Action,
-    string Resource,
-    int? ResourceId,
-    string? Metadata,
-    DateTime CreatedAtUtc);
+public record AdminAuditLogViewModel(int Id, int AdminUserId, string AdminName, string Action, string ResourceType, int ResourceId, string? Reason, DateTime CreatedAtUtc);
+
+public record ReturnRequestViewModel(
+    int Id,
+    int? OrderId,
+    int? UserId,
+    string? UserName,
+    string? UserEmail,
+    string? Reason,
+    string? Status,
+    DateTime? CreatedAt,
+    string? OrderStatus,
+    decimal OrderTotal,
+    DateTime? OrderDate,
+    string? PaymentMethod,
+    string? PaymentStatus,
+    string? ShippingCarrier,
+    string? TrackingNumber,
+    string? ShippingStatus);

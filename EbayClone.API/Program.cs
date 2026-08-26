@@ -49,10 +49,10 @@ builder.Services.AddOptions<JwtOptions>()
     .ValidateOnStart();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAdminAuditRepository, AdminAuditRepository>();
+builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
-builder.Services.AddScoped<IAuditRepository, AuditRepository>();
-builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<AdminReportService>();
@@ -66,6 +66,8 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IAdminOrderService, AdminOrderService>();
 builder.Services.AddScoped<IDisputeRepository, DisputeRepository>();
 builder.Services.AddScoped<IAdminDisputeService, AdminDisputeService>();
+builder.Services.AddScoped<IReturnRequestRepository, ReturnRequestRepository>();
+builder.Services.AddScoped<IAdminReturnRequestService, AdminReturnRequestService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -101,12 +103,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
-
-using (var scope = app.Services.CreateScope())
-{
-    await DbInitializer.InitializeAsync(
-        scope.ServiceProvider.GetRequiredService<AppDbContext>(),
-        scope.ServiceProvider.GetRequiredService<IConfiguration>());
-}
 
 app.Run();

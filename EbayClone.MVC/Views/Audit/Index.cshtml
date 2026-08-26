@@ -1,0 +1,5 @@
+@model PagedViewModel<AdminAuditLogViewModel>
+@{ ViewData["Title"] = "Audit Log"; }
+<h1 class="page-title">Audit Log</h1>
+<form method="get" class="panel mb-3 row g-2"><div class="col-md-4"><input class="form-control" name="auditAction" value="@ViewBag.AuditAction" placeholder="Action, e.g. BAN_USER" /></div><div class="col-md-4"><select class="form-select" name="resourceType"><option value="">Tất cả resource</option>@foreach (var value in new[] { "User", "Product", "Dispute", "ReturnRequest", "Review" }) { <option value="@value" selected="@(ViewBag.ResourceType == value)">@value</option> }</select></div><div class="col-auto"><button class="btn btn-primary">Lọc</button></div></form>
+<div class="panel table-responsive"><table class="table align-middle"><thead><tr><th>UTC</th><th>Admin</th><th>Action</th><th>Resource</th><th>Reason</th></tr></thead><tbody>@foreach (var log in Model.Items) { <tr><td>@log.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td><td>@log.AdminName (#@log.AdminUserId)</td><td><code>@log.Action</code></td><td>@log.ResourceType #@log.ResourceId</td><td>@log.Reason</td></tr> }</tbody></table></div>

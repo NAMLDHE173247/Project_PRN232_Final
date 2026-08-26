@@ -1,0 +1,18 @@
+@model ReturnRequestViewModel
+@{ ViewData["Title"] = $"Hoàn trả #{Model.Id}"; }
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="page-title mb-0">Yêu cầu hoàn trả #@Model.Id</h1><a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a></div>
+<div class="panel mb-3">
+    <div class="row g-3"><div class="col-md-3"><span class="text-muted">Order</span><div><a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.OrderId">#@Model.OrderId</a> · @Model.OrderStatus</div></div><div class="col-md-3"><span class="text-muted">Người yêu cầu</span><div>@Model.UserName</div><small class="text-muted">@Model.UserEmail</small></div><div class="col-md-3"><span class="text-muted">Ngày tạo</span><div>@Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</div></div><div class="col-md-3"><span class="text-muted">Status</span><div><span class="badge-status status-@Model.Status?.ToLowerInvariant()">@Model.Status</span></div></div></div>
+    <hr /><h2 class="h6">Lý do hoàn trả</h2><p class="decision-note mb-0">@Model.Reason</p>
+</div>
+<div class="row g-3 mb-3"><div class="col-lg-4"><div class="panel h-100"><h2 class="h6">Đơn hàng</h2><p class="mb-1">Tổng: @Model.OrderTotal.ToString("N0")</p><p class="mb-0">Ngày: @Model.OrderDate?.ToString("dd/MM/yyyy")</p></div></div><div class="col-lg-4"><div class="panel h-100"><h2 class="h6">Thanh toán</h2><p class="mb-1">@Model.PaymentMethod</p><span class="badge-status status-@Model.PaymentStatus?.ToLowerInvariant()">@Model.PaymentStatus</span></div></div><div class="col-lg-4"><div class="panel h-100"><h2 class="h6">Vận chuyển</h2><p class="mb-1">@Model.ShippingCarrier · @Model.TrackingNumber</p><span class="badge-status">@Model.ShippingStatus</span></div></div></div>
+<div class="panel">
+@if (Model.Status == "Pending")
+{
+    <div class="actions"><form asp-action="Approve" method="post"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-success" type="submit">Duyệt hoàn trả</button></form><form asp-action="Reject" method="post"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-danger" type="submit">Từ chối</button></form></div>
+}
+else
+{
+    <p class="text-muted mb-0">Yêu cầu đã kết thúc, không còn thao tác chuyển trạng thái.</p>
+}
+</div>

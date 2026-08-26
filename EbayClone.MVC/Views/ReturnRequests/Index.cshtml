@@ -1,0 +1,18 @@
+@model PagedViewModel<ReturnRequestViewModel>
+@{ ViewData["Title"] = "Yêu cầu hoàn trả"; }
+<h1 class="page-title">Yêu cầu hoàn trả</h1>
+<form method="get" class="panel mb-3 row g-2 align-items-end">
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="status">Trạng thái</label><select class="form-select" id="status" name="status"><option value="">Tất cả</option>@foreach (var value in new[] { "Pending", "Approved", "Rejected" }) { <option value="@value" selected="@(ViewBag.Status == value)">@value</option> }</select></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="userId">User ID</label><input class="form-control" id="userId" name="userId" type="number" min="1" value="@ViewBag.UserId" /></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="orderId">Order ID</label><input class="form-control" id="orderId" name="orderId" type="number" min="1" value="@ViewBag.OrderId" /></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="from">Từ ngày</label><input class="form-control" id="from" name="from" type="date" value="@ViewBag.From" /></div>
+    <div class="col-sm-6 col-lg-2"><label class="form-label" for="to">Đến ngày</label><input class="form-control" id="to" name="to" type="date" value="@ViewBag.To" /></div>
+    <div class="col-auto"><button class="btn btn-primary" type="submit">Lọc</button> <a class="btn btn-outline-secondary" asp-action="Index">Xóa lọc</a></div>
+</form>
+<div class="panel table-responsive"><table class="table align-middle"><thead><tr><th>ID</th><th>Order</th><th>Người yêu cầu</th><th>Lý do</th><th>Ngày tạo</th><th>Status</th><th></th></tr></thead><tbody>
+@foreach (var item in Model.Items)
+{
+    <tr><td>#@item.Id</td><td>#@item.OrderId</td><td><strong>@item.UserName</strong><div class="small text-muted">@item.UserEmail</div></td><td>@item.Reason</td><td>@item.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td><td><span class="badge-status status-@item.Status?.ToLowerInvariant()">@item.Status</span></td><td><a class="btn btn-outline-primary btn-sm" asp-action="Details" asp-route-id="@item.Id">Chi tiết</a></td></tr>
+}
+</tbody></table></div>
+<div class="mt-3 d-flex justify-content-between"><span class="text-muted">Trang @Model.Page / @Model.TotalPages · @Model.Total bản ghi</span><div class="btn-group"><a class="btn btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")" asp-route-page="@(Model.Page - 1)" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-orderId="@ViewBag.OrderId" asp-route-from="@ViewBag.From" asp-route-to="@ViewBag.To">Trước</a><a class="btn btn-outline-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" asp-route-page="@(Model.Page + 1)" asp-route-status="@ViewBag.Status" asp-route-userId="@ViewBag.UserId" asp-route-orderId="@ViewBag.OrderId" asp-route-from="@ViewBag.From" asp-route-to="@ViewBag.To">Sau</a></div></div>
