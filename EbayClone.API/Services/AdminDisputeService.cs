@@ -1,11 +1,10 @@
-using System.Text.Json;
 using EbayClone.API.DTOs.Disputes;
 using EbayClone.API.Models;
 using EbayClone.API.Repositories;
 
 namespace EbayClone.API.Services;
 
-public class AdminDisputeService(IDisputeRepository disputeRepository, IAuditRepository auditRepository)
+public class AdminDisputeService(IDisputeRepository disputeRepository, IAdminAuditRepository auditRepository)
     : IAdminDisputeService
 {
     public async Task<PagedDisputeResultDto> GetDisputesAsync(
@@ -23,26 +22,30 @@ public class AdminDisputeService(IDisputeRepository disputeRepository, IAuditRep
     public Task<DisputeDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         disputeRepository.GetDtoByIdAsync(id, cancellationToken);
 
-    public async Task<DisputeDto?> AssignAsync(
-        int id,
-        int actorAdminId,
-        int? assignedAdminId,
-        CancellationToken cancellationToken = default)
+    public async Task<DisputeDto?> AssignAsync(int id, int adminId, int assigneeId, CancellationToken cancellationToken = default)
+    {
+        if (!await disputeRepository.IsAdminAsync(assigneeId, cancellationToken)) throw new ArgumentException("Assignee must be an Admin user.");
+        var dispute = await disputeRepository.GetByIdAsync(id, cancellationToken);
+        if (dispute is null) return null;
+        if (dispute.Status != "Open") throw new InvalidOperationException("Only Open disputes can be assigned.");
+        dispute.Status = "Assigned";
+        dispute.AssignedTo = assigneeId;
+        dispute.AssignedAtUtc = DateTime.UtcNow;
+        auditRepository.Add(adminId, "ASSIGN_DISPUTE", "Dispute", id, $"Assigned to Admin #{assigneeId}");
+        await disputeRepository.SaveChangesAsync(cancellationToken);
+        return await disputeRepository.GetDtoByIdAsync(id, cancellationToken);
+    }
+
+    public async Task<DisputeDto?> StartReviewAsync(int id, int adminId, CancellationToken cancellationToken = default)
     {
         var dispute = await disputeRepository.GetByIdAsync(id, cancellationToken);
         if (dispute is null) return null;
-        if (dispute.Status != nameof(DisputeStatus.Open))
-            throw new InvalidOperationException("Only open disputes can be assigned.");
-
-        var targetAdminId = assignedAdminId ?? actorAdminId;
-        if (!await disputeRepository.IsAdminAsync(targetAdminId, cancellationToken))
-            throw new InvalidOperationException("Assigned user must have the Admin role.");
-
-        dispute.AssignedTo = targetAdminId;
-        dispute.AssignedAt = DateTime.UtcNow;
-        dispute.Status = nameof(DisputeStatus.Assigned);
+        if (dispute.Status != "Assigned") throw new InvalidOperationException("Only Assigned disputes can enter review.");
+        if (dispute.AssignedTo != adminId) throw new InvalidOperationException("Only the assigned Admin can start review.");
+        dispute.Status = "InReview";
+        dispute.ReviewStartedAtUtc = DateTime.UtcNow;
+        auditRepository.Add(adminId, "START_DISPUTE_REVIEW", "Dispute", id);
         await disputeRepository.SaveChangesAsync(cancellationToken);
-        await WriteAuditAsync(actorAdminId, "ASSIGN_DISPUTE", dispute, new { assignedTo = targetAdminId }, cancellationToken);
         return await disputeRepository.GetDtoByIdAsync(id, cancellationToken);
     }
 
@@ -51,7 +54,7 @@ public class AdminDisputeService(IDisputeRepository disputeRepository, IAuditRep
         int adminId,
         string resolution,
         CancellationToken cancellationToken = default) =>
-        FinishAsync(id, adminId, resolution, DisputeStatus.Assigned, DisputeStatus.Resolved, "RESOLVE_DISPUTE", cancellationToken);
+        FinishAsync(id, adminId, resolution, DisputeStatus.Open, DisputeStatus.Resolved, "RESOLVE_DISPUTE", cancellationToken);
 
     public Task<DisputeDto?> RejectAsync(
         int id,
@@ -76,33 +79,18 @@ public class AdminDisputeService(IDisputeRepository disputeRepository, IAuditRep
 
         var dispute = await disputeRepository.GetByIdAsync(id, cancellationToken);
         if (dispute is null) return null;
-        if (dispute.Status != expectedStatus.ToString())
-            throw new InvalidOperationException($"Only {expectedStatus} disputes can be changed by this action.");
+        if (dispute.Status is not ("Open" or "Assigned" or "InReview"))
+            throw new InvalidOperationException("Only active disputes can be changed by this action.");
+        if (dispute.AssignedTo.HasValue && dispute.AssignedTo != adminId)
+            throw new InvalidOperationException("Only the assigned Admin can finish this dispute.");
 
         dispute.Status = nextStatus.ToString();
         dispute.Resolution = resolution.Trim();
         dispute.ResolvedBy = adminId;
-        dispute.ResolvedAt = DateTime.UtcNow;
+        dispute.ResolvedAtUtc = DateTime.UtcNow;
+        auditRepository.Add(adminId, auditAction, "Dispute", id, dispute.Resolution);
         await disputeRepository.SaveChangesAsync(cancellationToken);
-        await WriteAuditAsync(adminId, auditAction, dispute, new { status = dispute.Status }, cancellationToken);
         return await disputeRepository.GetDtoByIdAsync(id, cancellationToken);
     }
 
-    private Task WriteAuditAsync(
-        int adminId,
-        string action,
-        Dispute dispute,
-        object metadata,
-        CancellationToken cancellationToken)
-    {
-        return auditRepository.AddAsync(new AuditLog
-        {
-            ActorId = adminId,
-            Action = action,
-            Resource = "DISPUTE",
-            ResourceId = dispute.Id,
-            Metadata = JsonSerializer.Serialize(metadata),
-            CreatedAtUtc = DateTime.UtcNow
-        }, cancellationToken);
-    }
 }

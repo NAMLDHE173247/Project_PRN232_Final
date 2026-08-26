@@ -1,27 +1,30 @@
 @model DisputeViewModel
 @{ ViewData["Title"] = $"Khiếu nại #{Model.Id}"; }
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="page-title mb-0">Khiếu nại #@Model.Id</h1><a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a></div>
-<div class="panel mb-3"><div class="row g-3"><div class="col-md-3"><span class="text-muted">Order</span><div>#@Model.OrderId</div></div><div class="col-md-3"><span class="text-muted">Người tạo</span><div>@Model.RaisedByName</div></div><div class="col-md-3"><span class="text-muted">Status</span><div><span class="badge-status">@Model.Status</span></div></div><div class="col-md-3"><span class="text-muted">Assigned Admin</span><div>@(Model.AssignedAdminName ?? "Chưa assign")</div></div></div><hr /><h2 class="h6">Mô tả</h2><p>@Model.Description</p>@if (!string.IsNullOrWhiteSpace(Model.Resolution)){<h2 class="h6">Kết luận</h2><p>@Model.Resolution</p>}</div>
+<div class="panel mb-3"><div class="row g-3"><div class="col-md-4"><span class="text-muted">Order</span><div><a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.OrderId">#@Model.OrderId</a></div></div><div class="col-md-4"><span class="text-muted">Người tạo</span><div>@Model.RaisedByName</div><small class="text-muted">User #@Model.RaisedBy</small></div><div class="col-md-4"><span class="text-muted">Status</span><div><span class="badge-status status-@Model.Status?.ToLowerInvariant()">@Model.Status</span></div></div></div><hr /><h2 class="h6">Mô tả khiếu nại</h2><p>@Model.Description</p>@if (!string.IsNullOrWhiteSpace(Model.Resolution)){<h2 class="h6">Kết luận của Admin</h2><p class="decision-note">@Model.Resolution</p>}</div>
 <div class="panel">
     @if (Model.Status == "Open")
     {
-        <div class="actions"><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assign-dispute-modal">Assign cho tôi</button><button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reject-dispute-modal">Từ chối</button></div>
+        <form asp-action="Assign" method="post" class="d-flex gap-2 mb-3"><input type="hidden" name="id" value="@Model.Id"/><input class="form-control" type="number" min="1" name="adminUserId" required placeholder="Admin ID"/><button class="btn btn-primary">Assign</button></form><div class="actions"><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#resolve-dispute-modal">Resolve directly</button><button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reject-dispute-modal">Từ chối</button></div>
     }
     else if (Model.Status == "Assigned")
     {
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#resolve-dispute-modal">Resolve</button>
+        <p>Assigned to @Model.AssignedToName (#@Model.AssignedTo)</p><form asp-action="StartReview" method="post"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-primary">Start review</button></form>
+    }
+    else if (Model.Status == "InReview")
+    {
+        <div class="actions"><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#resolve-dispute-modal">Resolve</button><button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reject-dispute-modal">Từ chối</button></div>
     }
     else
     {
         <p class="text-muted mb-0">Khiếu nại đã kết thúc, không còn thao tác chuyển trạng thái.</p>
     }
 </div>
-@if (Model.Status == "Open")
+@if (Model.Status is "Open" or "InReview")
 {
-    <div class="modal fade" id="assign-dispute-modal" tabindex="-1" aria-labelledby="assign-dispute-label" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="assign-dispute-label">Assign khiếu nại</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div><div class="modal-body">Nhận khiếu nại này để xử lý?</div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><form asp-action="Assign" method="post"><input type="hidden" name="id" value="@Model.Id" /><button type="submit" class="btn btn-primary">Xác nhận assign</button></form></div></div></div></div>
     <div class="modal fade" id="reject-dispute-modal" tabindex="-1" aria-labelledby="reject-dispute-label" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="reject-dispute-label">Từ chối khiếu nại</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div><form asp-action="Reject" method="post"><div class="modal-body"><label class="form-label" for="reject-resolution">Lý do từ chối</label><textarea class="form-control" id="reject-resolution" name="resolution" required maxlength="2000"></textarea></div><div class="modal-footer"><input type="hidden" name="id" value="@Model.Id" /><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-danger">Xác nhận từ chối</button></div></form></div></div></div>
 }
-@if (Model.Status == "Assigned")
+@if (Model.Status is "Open" or "InReview")
 {
     <div class="modal fade" id="resolve-dispute-modal" tabindex="-1" aria-labelledby="resolve-dispute-label" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="resolve-dispute-label">Resolve khiếu nại</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div><form asp-action="Resolve" method="post"><div class="modal-body"><label class="form-label" for="resolve-resolution">Kết luận phân xử</label><textarea class="form-control" id="resolve-resolution" name="resolution" required maxlength="2000"></textarea></div><div class="modal-footer"><input type="hidden" name="id" value="@Model.Id" /><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-success">Xác nhận resolve</button></div></form></div></div></div>
 }

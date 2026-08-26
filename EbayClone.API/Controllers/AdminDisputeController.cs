@@ -3,6 +3,7 @@ using EbayClone.API.DTOs.Disputes;
 using EbayClone.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EbayClone.API.Controllers;
 
@@ -26,13 +27,6 @@ public class AdminDisputeController(IAdminDisputeService disputeService) : Contr
         return dispute is null ? NotFound() : Ok(dispute);
     }
 
-    [HttpPut("{id:int}/assign")]
-    public Task<ActionResult<DisputeDto>> Assign(
-        int id,
-        AssignDisputeRequestDto request,
-        CancellationToken cancellationToken) =>
-        ExecuteTransition(() => disputeService.AssignAsync(id, GetAdminId(), request.AdminId, cancellationToken));
-
     [HttpPut("{id:int}/resolve")]
     public Task<ActionResult<DisputeDto>> Resolve(
         int id,
@@ -47,6 +41,14 @@ public class AdminDisputeController(IAdminDisputeService disputeService) : Contr
         CancellationToken cancellationToken) =>
         ExecuteTransition(() => disputeService.RejectAsync(id, GetAdminId(), request.Resolution, cancellationToken));
 
+    [HttpPut("{id:int}/assign")]
+    public Task<ActionResult<DisputeDto>> Assign(int id, AssignDisputeRequestDto request, CancellationToken cancellationToken) =>
+        ExecuteTransition(() => disputeService.AssignAsync(id, GetAdminId(), request.AdminUserId, cancellationToken));
+
+    [HttpPut("{id:int}/start-review")]
+    public Task<ActionResult<DisputeDto>> StartReview(int id, CancellationToken cancellationToken) =>
+        ExecuteTransition(() => disputeService.StartReviewAsync(id, GetAdminId(), cancellationToken));
+
     private static async Task<ActionResult<DisputeDto>> ExecuteTransition(Func<Task<DisputeDto?>> transition)
     {
         try
@@ -56,7 +58,15 @@ public class AdminDisputeController(IAdminDisputeService disputeService) : Contr
         }
         catch (InvalidOperationException exception)
         {
+            return new ConflictObjectResult(new { message = exception.Message });
+        }
+        catch (ArgumentException exception)
+        {
             return new BadRequestObjectResult(new { message = exception.Message });
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return new ConflictObjectResult(new { message = "The dispute state changed before this action completed." });
         }
     }
 

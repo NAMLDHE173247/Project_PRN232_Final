@@ -9,7 +9,8 @@ public record DisputeDto(
     string? Status,
     string? Resolution,
     int? AssignedTo,
-    string? AssignedAdminName,
-    DateTime? AssignedAt,
+    string? AssignedToName,
+    DateTime? AssignedAtUtc,
+    DateTime? ReviewStartedAtUtc,
     int? ResolvedBy,
-    DateTime? ResolvedAt);
+    DateTime? ResolvedAtUtc);

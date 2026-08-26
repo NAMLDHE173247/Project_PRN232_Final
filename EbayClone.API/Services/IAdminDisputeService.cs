@@ -10,11 +10,8 @@ public interface IAdminDisputeService
         int pageSize,
         CancellationToken cancellationToken = default);
     Task<DisputeDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<DisputeDto?> AssignAsync(
-        int id,
-        int actorAdminId,
-        int? assignedAdminId,
-        CancellationToken cancellationToken = default);
+    Task<DisputeDto?> AssignAsync(int id, int adminId, int assigneeId, CancellationToken cancellationToken = default);
+    Task<DisputeDto?> StartReviewAsync(int id, int adminId, CancellationToken cancellationToken = default);
     Task<DisputeDto?> ResolveAsync(
         int id,
         int adminId,

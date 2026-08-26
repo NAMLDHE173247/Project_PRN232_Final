@@ -22,10 +22,6 @@ public class DisputesController(AdminApiClient apiClient, AdminNotificationServi
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public Task<IActionResult> Assign(int id, CancellationToken cancellationToken) =>
-        RunAction(id, "assign", new { adminId = (int?)null }, cancellationToken);
-
-    [HttpPost, ValidateAntiForgeryToken]
     public Task<IActionResult> Resolve(int id, string resolution, CancellationToken cancellationToken) =>
         RunAction(id, "resolve", new { resolution }, cancellationToken);
 
@@ -33,20 +29,30 @@ public class DisputesController(AdminApiClient apiClient, AdminNotificationServi
     public Task<IActionResult> Reject(int id, string resolution, CancellationToken cancellationToken) =>
         RunAction(id, "reject", new { resolution }, cancellationToken);
 
+    [HttpPost, ValidateAntiForgeryToken]
+    public Task<IActionResult> Assign(int id, int adminUserId, CancellationToken cancellationToken) =>
+        RunAction(id, "assign", new { adminUserId }, cancellationToken);
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public Task<IActionResult> StartReview(int id, CancellationToken cancellationToken) =>
+        RunAction(id, "start-review", new { }, cancellationToken);
+
     private async Task<IActionResult> RunAction(int id, string action, object body, CancellationToken cancellationToken)
     {
         try
         {
             await apiClient.PutAsync<DisputeViewModel>($"api/admin/disputes/{id}/{action}", body, cancellationToken);
-            TempData["Success"] = "Cập nhật khiếu nại thành công.";
-            await notifications.BroadcastAsync("Trạng thái khiếu nại đã được cập nhật.", cancellationToken: cancellationToken);
+            TempData["Success"] = $"Dispute #{id} was {action}d.";
+            await notifications.BroadcastAsync($"Dispute #{id} was {action}d.", cancellationToken: cancellationToken);
             return RedirectToAction(nameof(Details), new { id });
         }
         catch (AdminApiException exception)
         {
             if (exception.StatusCode is 401 or 403)
                 return HandleApiFailure(exception);
-            TempData["Error"] = "API không xử lý được yêu cầu. Vui lòng kiểm tra trạng thái khiếu nại.";
+            TempData["Error"] = exception.StatusCode == 409
+                ? "Khiếu nại đã được xử lý trước đó."
+                : "API không xử lý được yêu cầu. Vui lòng kiểm tra nội dung và trạng thái khiếu nại.";
             return RedirectToAction(nameof(Details), new { id });
         }
     }
