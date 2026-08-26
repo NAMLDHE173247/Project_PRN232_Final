@@ -101,8 +101,8 @@ It is used as a deployment and service availability check.
 The local demo account is configured by `AdminAccount` settings:
 
 ```text
-Email: admin@gmail.com
-Password: Admin@123
+Email: admin.demo@gmail.com
+Password: Demo@123
 ```
 
 The marketplace demo accounts use the password `Demo@123`; they have the regular `User` role and cannot access the Admin Panel.
